@@ -1,0 +1,42 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Dependencies
+node_modules/
+/dist/ # Importante: No subas la carpeta 'dist' si quieres que el cliente vea el código fuente y lo compile.
+       # Si tu intención es que VEAN LA PÁGINA YA COMPILADA, deberías subir 'dist', pero es menos común.
+       # Para demos en GitHub Pages, es diferente, lo vemos más abajo.
+
+# Vite-specific
+.vite/
+
+# OSX
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# misc
+*.zip
+*.rar
+*.7z
+
+# venv for Python
+venv/
