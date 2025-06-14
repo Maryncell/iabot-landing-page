@@ -9,7 +9,7 @@ lerna-debug.log*
 
 # Dependencies
 node_modules/
-/dist/ # Importante: No subas la carpeta 'dist' si quieres que el cliente vea el código fuente y lo compile.
+#/dist/ # Importante: No subas la carpeta 'dist' si quieres que el cliente vea el código fuente y lo compile.
        # Si tu intención es que VEAN LA PÁGINA YA COMPILADA, deberías subir 'dist', pero es menos común.
        # Para demos en GitHub Pages, es diferente, lo vemos más abajo.
 
