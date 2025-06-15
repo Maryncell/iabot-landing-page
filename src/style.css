@@ -49,10 +49,9 @@ body {
 }
 
 /* Estilos de la sección de planes */
-/* Eliminamos el background-color directo aquí. Dejamos que el body o secciones más generales lo definan. */
+/* Esta sección no tiene un color de fondo fijo aquí para que el degradado del body se vea */
 .plans {
   padding: 4rem 0;
-  /* background-color: var(--secondary-color);  <-- Este ya no debería estar si quieres el degradado del body */
 }
 
 /* Estilos de las tarjetas de cada plan */
@@ -72,7 +71,7 @@ body {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
 }
 
-/* Estilo específico para el plan "popular" */
+/* Estilo específico para el plan "popular" (el del medio) */
 .plan-card.popular {
   border: 2px solid var(--primary-color); /* Borde azul brillante */
 }
@@ -116,15 +115,12 @@ body {
 }
 
 /* Estilos de la sección de testimonios */
-/* Eliminamos el background-color directo aquí. Dejamos que el body o las cards lo definan. */
 .testimonials {
   padding: 4rem 0;
+  /* Esta sección no tiene un color de fondo fijo aquí para que el degradado del body se vea */
 }
 
-/* Estilos de los cards de testimonios.
-   En App.jsx hemos añadido `bg-dark text-white` a las cards, lo cual es redundante
-   si ya el .card p-4 shadow-sm h-100 es de fondo oscuro, pero asegura el color.
-   Podríamos refactorizar esto. */
+/* Estilos de los cards de testimonios */
 .testimonials .card {
     background-color: var(--dark-color); /* Asegura el color de fondo para los cards de testimonios */
     color: white; /* Asegura el color del texto para los cards de testimonios */

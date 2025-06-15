@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './style.css'; // Asegúrate de que tus estilos originales estén importados
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Importa todos los iconos necesarios: faRobot, faChartLine, faHeadset, faCheck para planes/features, faStar para testimonios, faPlusCircle para añadir funciones.
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faFacebookF, faTwitter, faLinkedinIn, faInstagram } from '@fortawesome/free-solid-svg-icons'; // Agregué íconos de redes sociales
+// Importa todos los iconos necesarios para tu aplicación
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 
 const App = () => {
   // Estado para los datos del formulario de contacto
@@ -91,7 +91,6 @@ const App = () => {
         ...prev,
         [featureId]: !prev[featureId] // Invierte el estado de selección de la función
       };
-      // console.log('Selected features updated:', newState); // Debugging
       return newState;
     });
   };
@@ -112,7 +111,6 @@ const App = () => {
         total += feature.precio;
       }
     });
-    // console.log('Total price calculated:', total); // Debugging
     return total.toFixed(2); // Retorna el total formateado a 2 decimales
   };
 
@@ -196,7 +194,7 @@ const App = () => {
                 <a className="nav-link" href="#plans-section">Planes</a>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#addons-section">Funciones Adicionales</a> {/* Nuevo enlace a la sección de funciones */}
+                <a className="nav-link" href="#addons-section">Funciones Adicionales</a>
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#demo-section">Demo</a>
@@ -255,10 +253,11 @@ const App = () => {
       </section>
 
       {/* Plans Section - Sección para mostrar los planes de suscripción dinámicamente */}
-      {/* Eliminadas clases bg-light y text-dark de aquí para que style.css controle el fondo */}
+      {/* Las clases de color de Bootstrap (como bg-light, text-dark) se eliminaron de esta sección
+          para que tus estilos en style.css controlen el diseño, manteniendo el aspecto deseado. */}
       <section id="plans-section" className="py-5">
         <div className="container">
-          <h2 className="text-center mb-5">Nuestros Planes</h2> {/* Removido text-dark de aquí */}
+          <h2 className="text-center mb-5">Nuestros Planes</h2>
           <div className="row">
             {loadingPlanes ? (
               <p className="text-center">Cargando planes...</p>
@@ -269,9 +268,9 @@ const App = () => {
             ) : (
               // Mapea y renderiza cada plan obtenido del backend
               planes.map((plan, index) => (
-                <div className="col-md-4 mb-4" key={plan.id || index}> {/* Usa plan.id como key */}
-                  {/* Removidas bg-white/bg-primary/text-white/text-dark. El style.css debe manejar el background y color de texto. */}
-                  {/* Se mantiene la clase 'popular' para el segundo plan */}
+                <div className="col-md-4 mb-4" key={plan.id || index}>
+                  {/* La clase 'plan-card' en style.css define el fondo oscuro y texto blanco.
+                      'popular' añade el borde azul brillante si es el segundo plan. */}
                   <div className={`plan-card p-4 rounded shadow-sm h-100 ${index === 1 ? 'popular' : ''}`}>
                     <h3 className="plan-title">{plan.nombre}</h3>
                     <div className="price h4 mb-3">${plan.precio}<span className="fs-6">/mes</span></div>
@@ -283,7 +282,7 @@ const App = () => {
                     </ul>
                     <button
                       className={`btn ${index === 1 ? 'btn-light' : 'btn-custom'} w-100`}
-                      onClick={() => setFormData(prev => ({...prev, plan: plan.nombre}))} // Actualiza el plan seleccionado en el formulario
+                      onClick={() => setFormData(prev => ({...prev, plan: plan.nombre}))}
                     >
                       Contratar
                     </button>
@@ -310,17 +309,17 @@ const App = () => {
               // Mapea y renderiza cada función adicional
               features.map(feature => (
                 <div className="col-md-4 col-sm-6 mb-4" key={feature.id}>
-                  {/* Tarjeta de función adicional: cambia de estilo al ser seleccionada */}
+                  {/* La clase 'feature-addon-card' en style.css controla el fondo y colores
+                      basado en si está seleccionado o no. */}
                   <div className={`feature-addon-card p-3 rounded shadow-sm h-100 ${selectedFeatures[feature.id] ? 'bg-info text-white' : 'bg-secondary text-white'}`}
                        style={{ cursor: 'pointer' }}
-                       onClick={() => handleFeatureToggle(feature.id)}> {/* Manejador de click para seleccionar */}
+                       onClick={() => handleFeatureToggle(feature.id)}>
                     <div className="d-flex align-items-center mb-2">
                       <FontAwesomeIcon icon={faPlusCircle} className="me-2" />
                       <h5 className="mb-0">{feature.nombre}</h5>
                       <span className="ms-auto h5 mb-0">${feature.precio}</span>
                     </div>
                     <p className="text-muted small mb-2">{feature.descripcion}</p>
-                    {/* Indicador de selección */}
                     {selectedFeatures[feature.id] ? (
                       <span className="badge bg-success">Seleccionado</span>
                     ) : (
@@ -355,14 +354,15 @@ const App = () => {
       </section>
 
       {/* Testimonials Section - Sección de testimonios de clientes */}
-      {/* Eliminadas clases bg-light y text-dark de aquí para que style.css o las clases de card manejen el fondo */}
+      {/* Las clases de color de Bootstrap se eliminaron de esta sección
+          para que tus estilos en style.css controlen el diseño. */}
       <section id="testimonials-section" className="py-5">
         <div className="container">
           <h2 className="text-center mb-5">Lo que opinan nuestros clientes</h2>
           <div className="row justify-content-center">
+            {/* Las tarjetas de testimonios usan la clase 'card' que se estiliza en style.css */}
             <div className="col-md-6 mb-4">
-              {/* Añadidas clases bg-dark y text-white a la tarjeta */}
-              <div className="card p-4 shadow-sm h-100 bg-dark text-white">
+              <div className="card p-4 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-center mb-3">
                     <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
@@ -372,7 +372,7 @@ const App = () => {
                     <FontAwesomeIcon icon={faStar} className="text-warning" />
                   </div>
                   <p className="card-text">"IABOT ha revolucionado la forma en que atendemos a nuestros clientes. La automatización es increíble y el soporte es de primera."</p>
-                  <div className="d-flex align-items-center mt-3"> {/* Reinsertado el div para la imagen del autor */}
+                  <div className="d-flex align-items-center mt-3">
                     <img src="https://randomuser.me/api/portraits/women/32.jpg" className="rounded-circle me-3" width="50" alt="Cliente" />
                     <div>
                       <h6 className="mb-0">María González</h6>
@@ -383,18 +383,17 @@ const App = () => {
               </div>
             </div>
             <div className="col-md-6 mb-4">
-              {/* Añadidas clases bg-dark y text-white a la tarjeta */}
-              <div className="card p-4 shadow-sm h-100 bg-dark text-white">
+              <div className="card p-4 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-center mb-3">
                     <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
                     <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
                     <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
                     <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
-                    <FontAwesomeIcon icon={faStar} className="text-warning-half" /> {/* Puedes usar un icono para media estrella si tienes */}
+                    <FontAwesomeIcon icon={faStar} className="text-warning-half" />
                   </div>
                   <p className="card-text">"La implementación fue sencilla y el bot ha mejorado significativamente la eficiencia de nuestro equipo de atención."</p>
-                  <div className="d-flex align-items-center mt-3"> {/* Reinsertado el div para la imagen del autor */}
+                  <div className="d-flex align-items-center mt-3">
                     <img src="https://randomuser.me/api/portraits/men/45.jpg" className="rounded-circle me-3" width="50" alt="Cliente" />
                     <div>
                       <h6 className="mb-0">Carlos Mendoza</h6>
@@ -404,8 +403,8 @@ const App = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-6 mb-4"> {/* Tercer comentario original */}
-              <div className="card p-4 shadow-sm h-100 bg-dark text-white">
+            <div className="col-md-6 mb-4">
+              <div className="card p-4 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-center mb-3">
                     <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
@@ -494,6 +493,7 @@ const App = () => {
                     <ul className="list-unstyled">
                         <li><strong>Plan:</strong> {formData.plan} - ${planes.find(p => p.nombre === formData.plan)?.precio || 'N/A'}</li>
                         <li><strong>Funciones Adicionales:</strong></li>
+                        {/* Muestra las funciones seleccionadas */}
                         {features.filter(f => selectedFeatures[f.id]).map(f => (
                             <li key={f.id} className="ms-3"><FontAwesomeIcon icon={faCheck} className="me-2 text-success" /> {f.nombre} - ${f.precio}</li>
                         ))}

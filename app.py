@@ -4,20 +4,34 @@ import os
 from dotenv import load_dotenv
 from flask_cors import CORS
 import json # Importar para manejar JSON en la base de datos
+from flask_mail import Mail, Message # Importar para funcionalidades de email
 
-# Cargar variables de entorno del archivo .env
+# Cargar variables de entorno desde el archivo .env
+# Esto debe ir al principio para que las variables estén disponibles para la configuración de Flask.
 load_dotenv()
 
 app = Flask(__name__, static_folder='dist')
-
-# Configuración de la base de datos
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///site.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
 
 # Inicializar CORS con tu aplicación Flask
 # Esto habilitará CORS para todas las rutas y orígenes por defecto.
 # Para producción, se recomienda configurar orígenes específicos para mayor seguridad.
 CORS(app)
+
+# Configuración de Flask-Mail (obtenida de variables de entorno)
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT'))
+# Convierte la cadena 'True' o 'False' a booleano
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'False').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+
+mail = Mail(app) # Inicializar la extensión Flask-Mail
+
+# Configuración de la base de datos
+# Usaremos SQLite para el MVP. La ruta 'sqlite:///site.db' crea un archivo site.db en la raíz del proyecto.
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///site.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Para deshabilitar advertencias, no es esencial para el funcionamiento
 
 db = SQLAlchemy(app)
 
@@ -82,7 +96,7 @@ def static_files(path):
     return send_from_directory(app.static_folder, path)
 
 
-# Endpoint para el formulario de contacto (Ahora guarda en la DB)
+# Endpoint para el formulario de contacto (Ahora guarda en la DB y envía email)
 @app.route('/api/contacto', methods=['POST'])
 def contacto():
     data = request.get_json()
@@ -93,7 +107,7 @@ def contacto():
     email = data.get('email')
     phone = data.get('phone')
     plan = data.get('plan')
-    message = data.get('message')
+    message_from_form = data.get('message') # Renombrado para evitar conflicto con Message de Flask-Mail
     selected_features = data.get('selectedFeatures', [])
     total_price = data.get('totalPrice')
 
@@ -113,20 +127,63 @@ def contacto():
             plan_selected=plan,
             selected_features_json=selected_features_json,
             total_price=float(total_price), # Asegurarse de que el precio sea un float
-            message=message
+            message=message_from_form # Usar el mensaje renombrado
         )
         db.session.add(new_submission) # Añadir a la sesión de la base de datos
         db.session.commit() # Guardar los cambios en la base de datos
 
         print(f"Nueva consulta de contacto guardada en DB: {new_submission.name} - Plan: {new_submission.plan_selected}")
-        return jsonify({"status": "success", "message": f"¡Gracias {name}! Tu consulta sobre el plan {plan} ha sido recibida y guardada."}), 201
+
+        # --- Lógica para enviar el correo electrónico de notificación ---
+        notification_email_address = os.getenv('NOTIFICATION_EMAIL')
+        if notification_email_address:
+            msg = Message(
+                subject=f"Nueva Consulta IABOT de: {name} (Plan: {plan})",
+                recipients=[notification_email_address],
+                # Aquí puedes usar HTML para un email más bonito y estructurado
+                html=f"""
+                <p>Hola,</p>
+                <p>Has recibido una nueva consulta a través de tu página de IABOT Soluciones.</p>
+                <p><strong>Detalles del Cliente:</strong></p>
+                <ul>
+                    <li><strong>Nombre:</strong> {name}</li>
+                    <li><strong>Email:</strong> {email}</li>
+                    <li><strong>Teléfono:</strong> {phone if phone else 'No proporcionado'}</li>
+                </ul>
+                <p><strong>Selección del Plan y Funciones:</strong></p>
+                <ul>
+                    <li><strong>Plan Seleccionado:</strong> {plan}</li>
+                    <li><strong>Funciones Adicionales:</strong>
+                        <ul>
+                            {''.join([f'<li>{f["nombre"]} (${f["precio"]:.2f})</li>' for f in selected_features]) if selected_features else '<li>Ninguna</li>'}
+                        </ul>
+                    </li>
+                    <li><strong>Precio Total Estimado:</strong> ${float(total_price):.2f}</li>
+                </ul>
+                <p><strong>Mensaje del Cliente:</strong></p>
+                <p>{message_from_form if message_from_form else 'No proporcionado'}</p>
+                <br/>
+                <p>Atentamente,</p>
+                <p>Tu sistema IABOT</p>
+                """
+            )
+            try:
+                mail.send(msg)
+                print(f"Email de notificación enviado a {notification_email_address}")
+            except Exception as mail_error:
+                print(f"ERROR al enviar email de notificación: {mail_error}")
+                # Puedes elegir cómo manejar este error: mostrarlo al usuario o solo loguearlo
+        else:
+            print("ADVERTENCIA: NOTIFICATION_EMAIL no configurado en .env. No se envió email de notificación.")
+
+        return jsonify({"status": "success", "message": f"¡Gracias {name}! Tu consulta sobre el plan {plan} ha sido recibida y guardada. Te contactaremos pronto."}), 201
 
     except ValueError:
         return jsonify({"status": "error", "message": "El precio total no es un número válido."}), 400
     except Exception as e:
         db.session.rollback() # En caso de error, deshacer la transacción para mantener la DB consistente
-        print(f"Error al guardar la consulta de contacto: {e}")
-        return jsonify({"status": "error", "message": "Error interno del servidor al guardar la consulta."}), 500
+        print(f"Error general en contacto endpoint: {e}")
+        return jsonify({"status": "error", "message": "Error interno del servidor al procesar la consulta."}), 500
 
 
 # --- ENDPOINTS PARA LA BASE DE DATOS (PLANES) ---
@@ -222,7 +279,7 @@ def add_feature():
         print(f"Error al añadir función: {e}")
         return jsonify({"error": "Error interno del servidor al añadir función"}), 500
 
-# --- NUEVO ENDPOINT: PARA VER LAS CONSULTAS DE CONTACTO GUARDADAS ---
+# Endpoint para ver todas las consultas de contacto guardadas (para administración)
 @app.route('/api/submissions', methods=['GET'])
 def get_submissions():
     try:
@@ -284,8 +341,6 @@ if __name__ == '__main__':
             print("Planes iniciales añadidos a la base de datos.")
         else:
             print("La base de datos ya contiene planes. No se insertan planes iniciales.")
-            # Si necesitas actualizar las descripciones de planes existentes, puedes hacerlo aquí
-            # por ejemplo, buscando por nombre y actualizando el campo descripcion.
 
         # Opcional: añadir datos iniciales para Funciones si la tabla está vacía
         if Feature.query.count() == 0:
@@ -307,7 +362,6 @@ if __name__ == '__main__':
             print("Funciones adicionales iniciales añadidas a la base de datos.")
         else:
             print("La base de datos ya contiene funciones adicionales. No se insertan funciones iniciales.")
-            # Similar a los planes, puedes actualizar las descripciones de funciones aquí si es necesario.
 
     # Iniciar el servidor Flask
     # 'debug=True' es excelente para desarrollo ya que recarga el servidor en cambios.
