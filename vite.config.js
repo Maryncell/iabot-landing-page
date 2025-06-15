@@ -6,12 +6,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:3000' // Proxy para el backend
+      '/api': 'http://localhost:3000'
     }
   },
   build: {
-    outDir: 'dist', // Directorio de salida para el build
-    base: '/' // <--- ASEGÚRATE DE QUE ESTO SEA '/' PARA DESARROLLO LOCAL
+    outDir: 'dist',
+    base: '/' // <-- ESTO DEBE SER '/'
   }
 });
   

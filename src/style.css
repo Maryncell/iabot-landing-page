@@ -1,89 +1,191 @@
+/* Variables de color para fácil mantenimiento */
 :root {
-  --primary-color: #4cc9f0;
-  --secondary-color: #2c5364;
-  --dark-color: #162c43;
-  --darker-color: #0f2027;
+  --primary-color: #4cc9f0; /* Azul brillante */
+  --secondary-color: #2c5364; /* Azul oscuro medio */
+  --dark-color: #162c43;    /* Azul muy oscuro */
+  --darker-color: #0f2027;   /* Azul casi negro */
 }
+
+/* Estilos generales del cuerpo de la página */
 body {
+  /* Degradado de fondo con los colores definidos */
   background: linear-gradient(to right, var(--darker-color), #203a43, var(--secondary-color));
-  color: white;
-  font-family: 'Segoe UI', sans-serif;
-  line-height: 1.6;
+  color: white; /* Color de texto por defecto */
+  font-family: 'Segoe UI', sans-serif; /* Fuente preferida */
+  line-height: 1.6; /* Espaciado de línea */
 }
+
+/* Estilos de la barra de navegación */
 .navbar {
-  background-color: rgba(15, 32, 39, 0.9);
-  backdrop-filter: blur(10px);
+  background-color: rgba(15, 32, 39, 0.9); /* Fondo oscuro semi-transparente */
+  backdrop-filter: blur(10px); /* Efecto de desenfoque detrás del navbar */
 }
+
+/* Estilos de la sección principal (Hero) */
 .hero {
   text-align: center;
   padding: 6rem 2rem;
+  /* Fondo con degradado y imagen */
   background: linear-gradient(rgba(15, 32, 39, 0.7), rgba(15, 32, 39, 0.7)), url('https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
   background-size: cover;
   background-position: center;
-  min-height: 100vh;
+  min-height: 100vh; /* Ocupa al menos el 100% de la altura de la ventana */
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
+/* Estilos de la sección de características (¿Por qué elegir IABOT?) */
 .features {
   padding: 4rem 0;
-  background-color: var(--darker-color);
+  background-color: var(--darker-color); /* Fondo muy oscuro */
 }
+
+/* Estilos de los iconos en la sección de características */
 .feature-icon {
   font-size: 2.5rem;
-  color: var(--primary-color);
+  color: var(--primary-color); /* Color azul brillante */
   margin-bottom: 1rem;
 }
+
+/* Estilos de la sección de planes */
+/* Eliminamos el background-color directo aquí. Dejamos que el body o secciones más generales lo definan. */
 .plans {
   padding: 4rem 0;
-  background-color: var(--secondary-color);
+  /* background-color: var(--secondary-color);  <-- Este ya no debería estar si quieres el degradado del body */
 }
+
+/* Estilos de las tarjetas de cada plan */
 .plan-card {
-  background: var(--dark-color);
+  background: var(--dark-color); /* Fondo azul oscuro para las tarjetas */
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   margin-bottom: 1.5rem;
+  color: white; /* Asegura que el texto dentro de la tarjeta sea blanco */
 }
+
+/* Efecto hover para las tarjetas de plan */
 .plan-card:hover {
   transform: translateY(-10px);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
 }
+
+/* Estilo específico para el plan "popular" */
 .plan-card.popular {
-  border: 2px solid var(--primary-color);
+  border: 2px solid var(--primary-color); /* Borde azul brillante */
 }
+
+/* Estilos del título del plan */
 .plan-title {
   font-size: 1.5rem;
   margin-bottom: 1rem;
-  color: var(--primary-color);
+  color: var(--primary-color); /* Título en azul brillante */
 }
+
+/* Estilos del precio en la tarjeta del plan */
 .price {
   font-size: 2rem;
   font-weight: bold;
   margin: 1rem 0;
 }
+
+/* Estilos de los botones personalizados */
 .btn-custom {
-  background-color: var(--primary-color);
-  color: var(--darker-color);
+  background-color: var(--primary-color); /* Fondo azul brillante */
+  color: var(--darker-color); /* Texto casi negro */
   font-weight: bold;
   padding: 0.5rem 1.5rem;
   border-radius: 50px;
   transition: all 0.3s ease;
+  border: none; /* Asegura que no tenga un borde por defecto de bootstrap */
 }
+
+/* Efecto hover para los botones personalizados */
 .btn-custom:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(76, 201, 240, 0.4);
+  opacity: 0.9; /* Pequeño cambio de opacidad */
 }
+
+/* Estilos de la sección demo */
 .demo-section {
   padding: 4rem 0;
-  background-color: var(--darker-color);
+  background-color: var(--darker-color); /* Fondo muy oscuro */
 }
+
+/* Estilos de la sección de testimonios */
+/* Eliminamos el background-color directo aquí. Dejamos que el body o las cards lo definan. */
 .testimonials {
   padding: 4rem 0;
 }
+
+/* Estilos de los cards de testimonios.
+   En App.jsx hemos añadido `bg-dark text-white` a las cards, lo cual es redundante
+   si ya el .card p-4 shadow-sm h-100 es de fondo oscuro, pero asegura el color.
+   Podríamos refactorizar esto. */
+.testimonials .card {
+    background-color: var(--dark-color); /* Asegura el color de fondo para los cards de testimonios */
+    color: white; /* Asegura el color del texto para los cards de testimonios */
+}
+.testimonials .card .text-muted {
+    color: rgba(255, 255, 255, 0.75) !important; /* Aclara el texto muted en tarjetas oscuras */
+}
+
+
+/* Estilos del footer */
 .footer {
-  background-color: var(--darker-color);
+  background-color: var(--darker-color); /* Fondo muy oscuro */
   padding: 3rem 0;
   text-align: center;
+}
+
+/* Estilos para la sección de Funciones Adicionales */
+.feature-addon-card {
+  border: 2px solid transparent;
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+  min-height: 150px; /* Asegura un tamaño mínimo */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* Ajustar colores para que concuerden con el tema */
+  background-color: var(--dark-color); /* Fondo de la tarjeta por defecto */
+  color: white; /* Color del texto por defecto */
+}
+
+.feature-addon-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.feature-addon-card.bg-info { /* Esta clase se usa cuando está seleccionada */
+  background-color: var(--primary-color) !important; /* Color azul brillante */
+  border-color: var(--darker-color); /* Borde al seleccionar */
+  color: var(--darker-color) !important; /* Texto oscuro cuando la tarjeta es brillante */
+}
+.feature-addon-card.bg-info .text-muted {
+    color: rgba(0, 0, 0, 0.75) !important; /* Texto muted oscuro para el fondo claro */
+}
+
+
+.feature-addon-card.bg-secondary { /* Esta clase se usa cuando NO está seleccionada (reemplaza bg-secondary original de bootstrap) */
+    background-color: var(--secondary-color) !important; /* Color azul oscuro medio */
+    color: white !important;
+    border-color: transparent;
+}
+.feature-addon-card.bg-secondary .text-muted {
+    color: rgba(255, 255, 255, 0.75) !important; /* Texto muted claro para el fondo oscuro */
+}
+
+/* Estilo para los badges dentro de las feature cards */
+.feature-addon-card .badge {
+    font-size: 0.75em;
+    padding: 0.4em 0.6em;
+    border-radius: 0.5rem;
+}
+/* Asegura el color del texto del badge de warning */
+.feature-addon-card .badge.bg-warning.text-dark {
+    color: var(--darker-color) !important;
 }
