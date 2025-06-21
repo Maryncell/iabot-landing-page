@@ -271,8 +271,6 @@ def get_submissions():
 
 
 # --- NUEVOS ENDPOINTS PARA LA INTEGRACIÓN DE PAGOS CON STRIPE ---
-
-# Endpoint para crear una sesión de pago con Stripe Checkout
 @app.route('/api/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     data = request.get_json()
@@ -280,9 +278,8 @@ def create_checkout_session():
         return jsonify({"error": "No se recibieron datos para la sesión de pago"}), 400
 
     plan_nombre = data.get('plan')
-    # Recibimos una lista de IDs de las funciones seleccionadas
     selected_features_ids = data.get('selectedFeaturesIds', []) 
-    cliente_email = data.get('email', 'cliente@ejemplo.com') # Usar el email del formulario para Stripe
+    cliente_email = data.get('email', 'cliente@ejemplo.com')
     cliente_nombre = data.get('name', 'Cliente IABOT')
 
     if not plan_nombre:
@@ -292,38 +289,36 @@ def create_checkout_session():
     total_amount_calculated = 0
 
     try:
-        # 1. Buscar el plan en la DB y añadirlo a line_items
         plan_obj = Plan.query.filter_by(nombre=plan_nombre).first()
         if not plan_obj:
             return jsonify({"error": f"Plan '{plan_nombre}' no encontrado"}), 404
         
         line_items.append({
             'price_data': {
-                'currency': 'usd', # Moneda. 'usd' es universal para pruebas. En producción, podrías usar 'ars'.
+                'currency': 'usd',
                 'product_data': {
                     'name': plan_obj.nombre,
                     'description': f"Plan base: {plan_obj.nombre}",
-                    'images': ['https://placehold.co/100x100/0f2027/4cc9f0?text=Plan'] # Imagen placeholder para el producto
+                    'images': ['https://placehold.co/100x100/0f2027/4cc9f0?text=Plan']
                 },
-                'unit_amount': int(plan_obj.precio * 100), # Stripe usa centavos, así que multiplicamos por 100
+                'unit_amount': int(plan_obj.precio * 100),
             },
             'quantity': 1,
         })
         total_amount_calculated += plan_obj.precio
 
-        # 2. Buscar las funciones en la DB y añadirlas a line_items
         for feature_id in selected_features_ids:
             feature_obj = Feature.query.get(feature_id)
             if feature_obj:
                 line_items.append({
                     'price_data': {
-                        'currency': 'usd', # Moneda
+                        'currency': 'usd',
                         'product_data': {
                             'name': feature_obj.nombre,
                             'description': f"Función adicional: {feature_obj.nombre}",
-                            'images': ['https://placehold.co/100x100/0f2027/4cc9f0?text=Addon'] # Imagen placeholder
+                            'images': ['https://placehold.co/100x100/0f2027/4cc9f0?text=Addon']
                         },
-                        'unit_amount': int(feature_obj.precio * 100), # Centavos
+                        'unit_amount': int(feature_obj.precio * 100),
                     },
                     'quantity': 1,
                 })
@@ -334,20 +329,14 @@ def create_checkout_session():
         if not line_items:
             return jsonify({"error": "No se encontraron ítems válidos para la compra."}), 400
 
-        # Crear la sesión de Stripe Checkout
         checkout_session = stripe.checkout.Session.create(
-            # Configura los tipos de método de pago. 'card' es universal.
-            # Puedes añadir 'pm_mercadopago' si tu cuenta de Stripe en AR está configurada para ello.
             payment_method_types=['card'], 
             line_items=line_items,
             mode='payment',
-            # URLs a las que Stripe redirigirá después del pago.
-            # request.url_root asegura que funcione tanto en localhost como en un despliegue.
             success_url=request.url_root + 'success?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=request.url_root + 'cancel',
-            # Añadir email del cliente para pre-rellenar el formulario de Stripe
             customer_email=cliente_email, 
-            metadata={ # Metadatos opcionales para tu registro en Stripe
+            metadata={
                 'plan_nombre': plan_nombre,
                 'cliente_nombre': cliente_nombre,
                 'cliente_email': cliente_email,
@@ -363,13 +352,8 @@ def create_checkout_session():
         print(f"Error inesperado al crear sesión de pago: {e}")
         return jsonify({'error': 'Error interno del servidor al crear sesión de pago'}), 500
 
-# Rutas de éxito y cancelación para Stripe Checkout.
-# Simplemente redirigen al index.html del frontend por ahora.
-# En una aplicación más compleja, el frontend podría leer el session_id
-# para mostrar un mensaje de éxito/error más específico.
 @app.route('/success')
 def success():
-    # El session_id se puede obtener de request.args.get('session_id') si es necesario
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/cancel')
@@ -379,10 +363,8 @@ def cancel():
 
 if __name__ == '__main__':
     with app.app_context():
-        # Crea todas las tablas definidas en los modelos (Plan, Feature, ContactSubmission)
         db.create_all() 
 
-        # Opcional: añadir datos iniciales para Planes si la tabla está vacía
         if Plan.query.count() == 0:
             print("No se encontraron planes. Insertando planes iniciales...")
             plan_basico = Plan(
@@ -426,7 +408,6 @@ if __name__ == '__main__':
         else:
             print("La base de datos ya contiene planes. No se insertan planes iniciales.")
 
-        # Opcional: añadir datos iniciales para Funciones si la tabla está vacía
         if Feature.query.count() == 0:
             print("No se encontraron funciones adicionales. Insertando funciones iniciales...")
             feature_whatsapp = Feature(nombre="Integración WhatsApp", precio=50.00, descripcion="Permite al bot operar en WhatsApp.")

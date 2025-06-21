@@ -49,8 +49,10 @@ body {
 }
 
 /* Estilos de la sección de planes */
+/* Eliminamos el background-color directo aquí. Dejamos que el body o secciones más generales lo definan. */
 .plans {
   padding: 4rem 0;
+  /* background-color: var(--secondary-color);  <-- Este ya no debería estar si quieres el degradado del body */
 }
 
 /* Estilos de las tarjetas de cada plan */
@@ -70,7 +72,7 @@ body {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
 }
 
-/* Estilo específico para el plan "popular" (el del medio) */
+/* Estilo específico para el plan "popular" */
 .plan-card.popular {
   border: 2px solid var(--primary-color); /* Borde azul brillante */
 }
@@ -114,11 +116,15 @@ body {
 }
 
 /* Estilos de la sección de testimonios */
+/* Eliminamos el background-color directo aquí. Dejamos que el body o las cards lo definan. */
 .testimonials {
   padding: 4rem 0;
 }
 
-/* Estilos de los cards de testimonios */
+/* Estilos de los cards de testimonios.
+   En App.jsx hemos añadido `bg-dark text-white` a las cards, lo cual es redundante
+   si ya el .card p-4 shadow-sm h-100 es de fondo oscuro, pero asegura el color.
+   Podríamos refactorizar esto. */
 .testimonials .card {
     background-color: var(--dark-color); /* Asegura el color de fondo para los cards de testimonios */
     color: white; /* Asegura el color del texto para los cards de testimonios */
@@ -140,10 +146,11 @@ body {
   border: 2px solid transparent;
   transition: all 0.3s ease-in-out;
   cursor: pointer;
-  min-height: 150px;
+  min-height: 150px; /* Asegura un tamaño mínimo */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  /* Ajustar colores para que concuerden con el tema */
   background-color: var(--dark-color);
   color: white;
 }
@@ -153,23 +160,23 @@ body {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-.feature-addon-card.bg-info {
-  background-color: var(--primary-color) !important;
-  border-color: var(--darker-color);
-  color: var(--darker-color) !important;
+.feature-addon-card.bg-info { /* Esta clase se usa cuando está seleccionada */
+  background-color: var(--primary-color) !important; /* Color azul brillante */
+  border-color: var(--darker-color); /* Borde al seleccionar */
+  color: var(--darker-color) !important; /* Texto oscuro cuando la tarjeta es brillante */
 }
 .feature-addon-card.bg-info .text-muted {
-    color: rgba(0, 0, 0, 0.75) !important;
+    color: rgba(0, 0, 0, 0.75) !important; /* Texto muted oscuro para el fondo claro */
 }
 
 
-.feature-addon-card.bg-secondary {
+.feature-addon-card.bg-secondary { /* Esta clase se usa cuando NO está seleccionada (reemplaza bg-secondary original de bootstrap) */
     background-color: var(--secondary-color) !important;
     color: white !important;
     border-color: transparent;
 }
 .feature-addon-card.bg-secondary .text-muted {
-    color: rgba(255, 255, 255, 0.75) !important;
+    color: rgba(255, 255, 255, 0.75) !important; /* Texto muted claro para el fondo oscuro */
 }
 
 /* Estilo para los badges dentro de las feature cards */
@@ -181,4 +188,74 @@ body {
 /* Asegura el color del texto del badge de warning */
 .feature-addon-card .badge.bg-warning.text-dark {
     color: var(--darker-color) !important;
+}
+
+/* --- NUEVOS ESTILOS PARA EL CHATBOT DEMO --- */
+.chatbot-container {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-history {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* Ajustado para dejar espacio al input, controles de demo y botones de sugerencia */
+    max-height: calc(100% - 200px); /* Ajustado para los nuevos elementos */
+    min-height: 200px; /* Asegura que el historial tenga un tamaño mínimo */
+}
+
+.message-bubble {
+    border-radius: 0.75rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+}
+
+/* Colores para las burbujas de mensaje */
+.message-bubble.bg-primary { /* Mensajes de usuario */
+    background-color: var(--primary-color) !important;
+    color: var(--darker-color) !important;
+}
+
+.message-bubble.bg-secondary { /* Mensajes del bot */
+    background-color: var(--secondary-color) !important;
+    color: white !important;
+}
+
+/* Placeholder del input del chat */
+.chatbot-container input.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Estilos para los controles de funciones de demo */
+.demo-features-controls label {
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+
+/* Estilo para el switch de Bootstrap para que sea más visible */
+.form-check-input:checked {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+.form-check-input {
+    background-color: rgba(255,255,255,0.2) !important;
+    border: 1px solid rgba(255,255,255,0.4) !important;
+    cursor: pointer;
+}
+
+/* NUEVO: Estilos para los botones de sugerencia */
+.suggestion-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.suggestion-button:hover {
+    background-color: var(--primary-color);
+    color: var(--darker-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }

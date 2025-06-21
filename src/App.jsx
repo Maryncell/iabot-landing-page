@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './style.css'; // Asegúrate de que tus estilos originales estén importados
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb } from '@fortawesome/free-solid-svg-icons'; // Nuevos iconos para las demos
 
 // Importa y carga Stripe.js (esto es lo recomendado por Stripe para el frontend)
 // window.Stripe se hará globalmente disponible una vez que el script se cargue.
 const loadStripeScript = () => {
   return new Promise((resolve) => {
     if (window.Stripe) {
-      resolve(window.Stripe);
+      resolve(window.Stripe); // <<<< CORREGIDO: De 'Stupe' a 'Stripe'
       return;
     }
     const script = document.createElement('script');
@@ -29,18 +29,31 @@ const App = () => {
 
   const [planes, setPlanes] = useState([]);
   const [features, setFeatures] = useState([]);
-  const [selectedFeatures, setSelectedFeatures] = useState({});
+  const [selectedFeatures, setSelectedFeatures] = useState({}); 
 
   const [loadingPlanes, setLoadingPlanes] = useState(true);
   const [errorPlanes, setErrorPlanes] = useState(null);
   const [loadingFeatures, setLoadingFeatures] = useState(true);
   const [errorFeatures, setErrorFeatures] = useState(null);
-  const [stripePromise, setStripePromise] = useState(null); // Estado para almacenar la instancia de Stripe
+  const [stripePromise, setStripePromise] = useState(null); 
+
+  // NUEVOS ESTADOS PARA EL CHATBOT DEMO MEJORADO
+  const [chatHistory, setChatHistory] = useState([]); 
+  const [currentMessage, setCurrentMessage] = useState(''); 
+  const [selectedDemoFeatures, setSelectedDemoFeatures] = useState({ 
+    whatsapp: false,
+    humanAgent: false,
+    leadQualification: false,
+    faqResponder: false, 
+    dataCollection: false, 
+    productRecommendation: false, 
+  });
+  const [demoContext, setDemoContext] = useState(null); 
 
   // CLAVE PUBLICABLE DE STRIPE (¡MODO DE PRUEBA!)
   // Obtén esta clave de tu Dashboard de Stripe en la sección "Desarrolladores" -> "Claves de API"
   // ¡Es la que empieza con 'pk_test_...'! NO ES LA CLAVE SECRETA.
-  const STRIPE_PUBLIC_KEY = 'pk_test_51RcVgRCMnk8vxlKvTECJwdsLCz2PlvqjWJGdem4i9odVOFsy8wxSN618xqAq3nKvmw8UWsPM3AyvqI5s1y1ybnjq006pPAgkOh'; 
+  const STRIPE_PUBLIC_KEY = 'pk_test_TU_CLAVE_PUBLICABLE_GENERADA_POR_STRIPE'; 
 
   // Cargar Stripe.js cuando el componente se monta
   useEffect(() => {
@@ -122,45 +135,40 @@ const App = () => {
     return total.toFixed(2);
   };
 
-  // --- NUEVA FUNCIÓN: Manejador de clic para iniciar el proceso de pago con Stripe ---
+  // Manejador de clic para iniciar el proceso de pago con Stripe
   const handleCheckout = async () => {
-    // Validaciones básicas antes de enviar a Stripe
     if (!formData.name || !formData.email || !formData.plan) {
       alert("Por favor, completa tu nombre y email en el formulario de contacto para proceder con el pago.");
-      // Opcional: Desplazar a la sección de contacto para que el usuario complete los datos
       document.getElementById('contact-section').scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
     try {
-      // Recolectar solo los IDs de las funciones seleccionadas para enviarlos al backend
       const selectedFeatureIds = features
         .filter(f => selectedFeatures[f.id])
         .map(f => f.id); 
 
-      // Realizar una solicitud POST a tu backend para crear la sesión de pago de Stripe
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          plan: formData.plan, // Nombre del plan seleccionado
-          selectedFeaturesIds: selectedFeatureIds, // IDs de las funciones seleccionadas
-          email: formData.email, // Email del cliente para pre-rellenar el formulario de Stripe
-          name: formData.name,   // Nombre del cliente
-          totalPrice: calculateTotalPrice() // Precio total calculado (para verificación en backend)
+          plan: formData.plan, 
+          selectedFeaturesIds: selectedFeatureIds, 
+          email: formData.email, 
+          name: formData.name,   
+          totalPrice: calculateTotalPrice() 
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json(); // Intentar leer el error si el backend lo envía en JSON
+        const errorData = await response.json(); 
         throw new Error(errorData.error || 'Error al crear la sesión de pago en el servidor.');
       }
 
-      const session = await response.json(); // Obtener la ID de la sesión de Stripe
-
-      // Redirigir al cliente a la página de pago de Stripe
+      const session = await response.json(); 
+      
       const stripe = await stripePromise;
       if (stripe) {
         const result = await stripe.redirectToCheckout({
@@ -168,7 +176,7 @@ const App = () => {
         });
 
         if (result.error) {
-          alert(result.error.message); // Mostrar cualquier error de redirección de Stripe
+          alert(result.error.message); 
         }
       } else {
         alert("La librería de Stripe no está cargada correctamente. Por favor, intenta de nuevo.");
@@ -180,7 +188,7 @@ const App = () => {
     }
   };
 
-  // Manejador del envío del formulario de contacto (sin cambios importantes, ya envía a DB y email)
+  // Manejador del envío del formulario de contacto
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -235,6 +243,191 @@ const App = () => {
       [name]: value
     }));
   };
+
+  // --- FUNCIONES PARA EL CHATBOT DEMO MEJORADO ---
+
+  // Manejador para alternar las funciones de demo y reiniciar el chat
+  const handleDemoFeatureToggle = (featureName) => {
+    setSelectedDemoFeatures(prev => ({
+      ...prev,
+      [featureName]: !prev[featureName]
+    }));
+    setChatHistory([]); // Reinicia el chat al cambiar las funciones
+    setDemoContext(null); // Reinicia cualquier contexto de conversación
+  };
+
+  // Función principal para simular la respuesta del bot, ahora más compleja
+  const getBotResponse = (userMsg) => {
+    const lowerMsg = userMsg.toLowerCase().trim();
+
+    // 1. Manejar contexto de conversación (flujos multi-turno)
+    if (demoContext === 'data_collection_step1') {
+        setDemoContext('data_collection_step2');
+        return `¡Gracias, ${userMsg}! Ahora, por favor, ingresa tu email para que podamos enviarte más información.`;
+    }
+    if (demoContext === 'data_collection_step2') {
+        // Validación simple de email. En un bot real sería más robusto.
+        if (lowerMsg.includes("@") && lowerMsg.includes(".")) {
+            setDemoContext(null); // Finaliza el contexto de recopilación
+            return `¡Excelente, recibimos tu email ${userMsg}! Un representante se pondrá en contacto contigo pronto. Esto demuestra nuestra capacidad de recopilar información de forma conversacional.`;
+        } else {
+            return `Ese no parece ser un email válido. Por favor, ingresa un email válido.`;
+        }
+    }
+    if (demoContext === 'product_reco_step1') {
+        setDemoContext('product_reco_step2');
+        return `Interesante. ¿Qué es lo más importante para ti en una solución de chatbot: el ${userMsg} o el presupuesto?`;
+    }
+    if (demoContext === 'product_reco_step2') {
+        setDemoContext(null); // Finaliza el contexto de recomendación
+        if (lowerMsg.includes("presupuesto") || lowerMsg.includes("costo")) {
+            return `Si tu prioridad es el presupuesto, te recomendaría nuestro plan "Básico", que ofrece una excelente relación calidad-precio para empezar.`;
+        } else if (lowerMsg.includes("funcionalidad") || lowerMsg.includes("características")) {
+            return `Si tu prioridad es la funcionalidad, te sugeriría explorar nuestro plan "Premium", que ofrece todas las funcionalidades avanzadas para una experiencia completa.`;
+        } else {
+            return `Entendido. Basado en tu interés en ${userMsg}, nuestros planes Avanzado o Premium podrían ser ideales. Puedes ver sus detalles en la sección "Planes".`;
+        }
+    }
+
+
+    // 2. Manejar funciones de demo activadas (palabras clave específicas)
+    // PRIORIDAD: Respuestas específicas de funcionalidades de demo si están activas
+    if (selectedDemoFeatures.whatsapp && (lowerMsg.includes("whatsapp") || lowerMsg.includes("multicanal") || lowerMsg.includes("telegram"))) {
+        return "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están.";
+    }
+
+    if (selectedDemoFeatures.humanAgent && (lowerMsg.includes("agente") || lowerMsg.includes("humano") || lowerMsg.includes("hablar con alguien"))) {
+        return "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'.";
+    }
+
+    if (selectedDemoFeatures.faqResponder) {
+        if (lowerMsg.includes("horario") || lowerMsg.includes("abierto")) {
+            return "Nuestras oficinas están abiertas de lunes a viernes, de 9 AM a 6 PM (hora local de Guernica, Argentina). ¡Siempre listos para atenderte!";
+        } else if (lowerMsg.includes("devoluciones") || lowerMsg.includes("reembolso")) {
+            return "Nuestra política de devoluciones permite solicitar un reembolso completo dentro de los 30 días posteriores a la compra, bajo ciertas condiciones. ¿Necesitas más detalles?";
+        } else if (lowerMsg.includes("soporte") || lowerMsg.includes("ayuda")) {
+            return "Ofrecemos soporte 24/7 para nuestros planes Avanzado y Premium. Para el plan Básico, el soporte es por email en horario de oficina.";
+        }
+    }
+
+    if (selectedDemoFeatures.leadQualification) {
+        if (lowerMsg.includes("industria") || lowerMsg.includes("negocio")) {
+            return "¡Claro! Para ofrecerte el mejor servicio, ¿podrías indicarme a qué industria pertenece tu negocio (ej. retail, salud, servicios, manufactura)?";
+        } else if (lowerMsg.includes("retail") || lowerMsg.includes("comercio") || lowerMsg.includes("ventas")) {
+            return "Entendido, la industria minorista es clave para la automatización. ¿Te gustaría que el bot gestionara consultas de productos o el estado de pedidos?";
+        } else if (lowerMsg.includes("salud") || lowerMsg.includes("clinica") || lowerMsg.includes("hospital")) {
+            return "Perfecto, en salud la confidencialidad es vital. Nuestro bot puede agendar citas y responder FAQs de forma segura. ¿Qué te interesa más?";
+        } else if (lowerMsg.includes("servicios") || lowerMsg.includes("consultoria")) {
+            return "Excelente, los bots pueden optimizar la atención al cliente en servicios. ¿Te gustaría automatizar la reserva de citas o el soporte inicial?";
+        }
+    }
+
+
+    // 3. Iniciar flujos de demo si se activan y el usuario usa una frase clave para iniciar
+    if (selectedDemoFeatures.dataCollection && (lowerMsg.includes("recopilar datos") || lowerMsg.includes("captar datos") || lowerMsg.includes("iniciar registro")) && demoContext === null) {
+        setDemoContext('data_collection_step1'); // Inicia el flujo de recopilación de datos
+        return "¡Claro! Con gusto te demostraré cómo nuestro bot puede recopilar información. Para empezar, ¿cuál es tu nombre?";
+    }
+
+    if (selectedDemoFeatures.productRecommendation && (lowerMsg.includes("recomendar plan") || lowerMsg.includes("que plan") || lowerMsg.includes("ayuda a elegir")) && demoContext === null) {
+        setDemoContext('product_reco_step1'); // Inicia el flujo de recomendación de producto
+        return "¡Excelente! Para recomendarte el plan ideal, ¿podrías decirme cuál es el principal desafío de tu negocio en este momento? (ej. automatización, soporte 24/7, generación de leads)";
+    }
+
+    // 4. Respuestas predefinidas generales (si ninguna función de demo o contexto es relevante)
+    if (lowerMsg.includes("hola")) {
+      return "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
+    } else if (lowerMsg.includes("precio") || lowerMsg.includes("costo") || lowerMsg.includes("planes")) {
+      return "Puedes ver nuestros planes y funciones adicionales en las secciones 'Planes' y 'Funciones Adicionales' de esta página. ¡Haz clic para explorar!";
+    } else if (lowerMsg.includes("gracias")) {
+      return "¡De nada! Estoy aquí para ayudarte a transformar tu negocio.";
+    } else if (lowerMsg.includes("contacto")) {
+      return "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. ¡Te esperamos!";
+    } 
+
+    // 5. Respuesta por defecto si nada de lo anterior se activa
+    if (userMsg.length > 0) {
+      return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave.`;
+    }
+    return "¿Podrías repetir eso? Para una demo más avanzada, selecciona las funcionalidades y usa las sugerencias.";
+  };
+
+  // Manejador para enviar mensajes en el chat del demo
+  const handleSendMessage = (e) => { // <--- ¡AQUÍ ESTÁ DEFINIDA LA FUNCIÓN!
+    e.preventDefault(); // Previene la recarga de la página si es un formulario
+    if (currentMessage.trim() === '') return; // No enviar mensajes vacíos
+
+    const userMsg = currentMessage;
+
+    // 1. Añadir mensaje del usuario al historial
+    setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
+    setCurrentMessage(''); // Limpiar el input
+
+    // 2. Simular tiempo de respuesta del bot y añadir su mensaje
+    setTimeout(() => {
+      const botMsg = getBotResponse(userMsg);
+      setChatHistory(prev => [...prev, { sender: 'bot', text: botMsg }]);
+    }, 500); // Retraso de 0.5 segundos para simular "pensamiento" del bot
+  };
+
+  // Genera botones de sugerencia dinámicamente basados en el contexto y las funciones activas
+  const getSuggestionButtons = () => {
+    let suggestions = [];
+
+    // Sugerencias basadas en el contexto activo (tienen prioridad)
+    if (demoContext === 'data_collection_step1') {
+        suggestions.push({ text: "Mi nombre es [Tu Nombre]", key: "Mi nombre es Juan" });
+    } else if (demoContext === 'data_collection_step2') {
+        suggestions.push({ text: "miemail@ejemplo.com", key: "miemail@ejemplo.com" });
+    } else if (demoContext === 'product_reco_step1') {
+        suggestions.push({ text: "Automatización", key: "automatizacion" });
+        suggestions.push({ text: "Soporte 24/7", key: "soporte 24/7" });
+        suggestions.push({ text: "Generación de leads", key: "generacion de leads" });
+    } else if (demoContext === 'product_reco_step2') {
+        suggestions.push({ text: "El presupuesto", key: "presupuesto" });
+        suggestions.push({ text: "La funcionalidad", key: "funcionalidad" });
+    } else { // Sugerencias si no hay contexto activo, basadas en funciones de demo
+        // Sugerencias generales siempre disponibles
+        suggestions.push({ text: "Hola", key: "hola" });
+        suggestions.push({ text: "¿Qué planes tienen?", key: "planes" });
+        suggestions.push({ text: "Contacto", key: "contacto" });
+        
+        if (selectedDemoFeatures.whatsapp) {
+            suggestions.push({ text: "Demo WhatsApp", key: "whatsapp" });
+        }
+        if (selectedDemoFeatures.humanAgent) {
+            suggestions.push({ text: "Conectar con un agente", key: "hablar con alguien" });
+        }
+        if (selectedDemoFeatures.leadQualification) {
+            suggestions.push({ text: "¿Cuál es mi industria?", key: "industria" });
+            suggestions.push({ text: "Mi negocio es de retail", key: "retail" });
+        }
+        if (selectedDemoFeatures.faqResponder) {
+            suggestions.push({ text: "Horarios de atención", key: "horario" });
+            suggestions.push({ text: "Política de devoluciones", key: "devoluciones" });
+            suggestions.push({ text: "¿Necesito soporte?", key: "soporte" });
+        }
+        if (selectedDemoFeatures.dataCollection) {
+            suggestions.push({ text: "Recopilar mis datos", key: "recopilar datos" });
+        }
+        if (selectedDemoFeatures.productRecommendation) {
+            suggestions.push({ text: "Recomendarme un plan", key: "recomendar plan" });
+        }
+    }
+    
+    // Filtramos duplicados para que los botones sean únicos (por su 'key')
+    const uniqueSuggestions = [];
+    const seen = new Set();
+    for (const suggestion of suggestions) {
+        if (!seen.has(suggestion.key)) {
+            uniqueSuggestions.push(suggestion);
+            seen.add(suggestion.key);
+        }
+    }
+
+    return uniqueSuggestions;
+  };
+
 
   return (
     <>
@@ -386,7 +579,6 @@ const App = () => {
             <h3 className="mb-3">Precio Total Estimado:</h3>
             <p className="display-4 fw-bold text-primary">${calculateTotalPrice()}</p>
             <p className="lead">Incluye el plan seleccionado y las funciones adicionales.</p>
-            {/* Botón para iniciar el proceso de pago con Stripe */}
             <button type="button" className="btn btn-custom btn-lg mt-3" onClick={handleCheckout}>
               Proceder al Pago
             </button>
@@ -394,14 +586,126 @@ const App = () => {
         </div>
       </section>
 
-      {/* Demo Section - Sección de demostración del bot */}
+      {/* Demo Section - Sección de demostración del bot (MEJORADA) */}
       <section id="demo-section" className="py-5">
         <div className="container text-center">
           <h2 className="mb-4">Prueba nuestro Bot</h2>
           <p className="lead mb-4">Interactúa con un ejemplo de nuestro chatbot y descubre su potencial.</p>
-          <div className="bot-demo-placeholder" style={{ height: '400px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-            <p className="lead">¡Aquí estará la demo interactiva de tu bot!</p>
+          
+          {/* Contenedor del Chatbot Demo */}
+          <div className="chatbot-container bg-darker-color rounded shadow-lg p-4 mx-auto" style={{ maxWidth: '600px', height: '550px', display: 'flex', flexDirection: 'column' }}>
+            {/* Controles de funciones de demo */}
+            <div className="demo-features-controls mb-3 p-3 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <p className="fw-bold mb-2">Activar funciones de demo:</p>
+              <div className="d-flex flex-wrap gap-3 justify-content-center">
+                <div className="form-check form-switch">
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="whatsappSwitch" 
+                    checked={selectedDemoFeatures.whatsapp} 
+                    onChange={() => handleDemoFeatureToggle('whatsapp')} 
+                  />
+                  <label className="form-check-label" htmlFor="whatsappSwitch">Integración WhatsApp</label>
+                </div>
+                <div className="form-check form-switch">
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="humanAgentSwitch" 
+                    checked={selectedDemoFeatures.humanAgent} 
+                    onChange={() => handleDemoFeatureToggle('humanAgent')} 
+                  />
+                  <label className="form-check-label" htmlFor="humanAgentSwitch">Transferencia a Agente Humano</label>
+                </div>
+                <div className="form-check form-switch">
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="leadQualSwitch" 
+                    checked={selectedDemoFeatures.leadQualification} 
+                    onChange={() => handleDemoFeatureToggle('leadQualification')} 
+                  />
+                  <label className="form-check-label" htmlFor="leadQualSwitch">Calificación de Lead</label>
+                </div>
+                 <div className="form-check form-switch"> {/* Nueva demo feature */}
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="faqResponderSwitch" 
+                    checked={selectedDemoFeatures.faqResponder} 
+                    onChange={() => handleDemoFeatureToggle('faqResponder')} 
+                  />
+                  <label className="form-check-label" htmlFor="faqResponderSwitch">FAQs Inteligentes</label>
+                </div>
+                <div className="form-check form-switch"> {/* Nueva demo feature */}
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="dataCollectionSwitch" 
+                    checked={selectedDemoFeatures.dataCollection} 
+                    onChange={() => handleDemoFeatureToggle('dataCollection')} 
+                  />
+                  <label className="form-check-label" htmlFor="dataCollectionSwitch">Recopilación de Datos</label>
+                </div>
+                 <div className="form-check form-switch"> {/* Nueva demo feature */}
+                  <input 
+                    className="form-check-input" 
+                    type="checkbox" 
+                    id="productRecommendationSwitch" 
+                    checked={selectedDemoFeatures.productRecommendation} 
+                    onChange={() => handleDemoFeatureToggle('productRecommendation')} 
+                  />
+                  <label className="form-check-label" htmlFor="productRecommendationSwitch">Recomendación de Plan</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Historial de mensajes */}
+            <div className="chat-history flex-grow-1 overflow-auto p-3 mb-3 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
+              {chatHistory.length === 0 ? (
+                <p className="text-muted text-center mt-5">¡Hola! Activa funciones de demo y usa las sugerencias para empezar.</p>
+              ) : (
+                chatHistory.map((msg, index) => (
+                  <div key={index} className={`d-flex mb-2 ${msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'}`}>
+                    <div className={`message-bubble p-2 rounded ${msg.sender === 'user' ? 'bg-primary text-dark' : 'bg-secondary text-white'}`} style={{ maxWidth: '80%' }}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Botones de sugerencia */}
+            <div className="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                {getSuggestionButtons().map((suggestion, index) => (
+                    <button 
+                        key={index} 
+                        className="btn btn-outline-light btn-sm suggestion-button" 
+                        onClick={() => {
+                            setCurrentMessage(suggestion.text);
+                            handleSendMessage({ preventDefault: () => {} }); // Llamada a handleSendMessage aquí
+                        }}
+                    >
+                        {suggestion.text}
+                    </button>
+                ))}
+            </div>
+
+            {/* Input para el nuevo mensaje */}
+            <form onSubmit={handleSendMessage} className="d-flex gap-2">
+              <input
+                type="text"
+                className="form-control flex-grow-1"
+                placeholder="Escribe tu mensaje..."
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                style={{ backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }}
+              />
+              <button type="submit" className="btn btn-custom">Enviar</button>
+            </form>
           </div>
+
           <a href="#" className="btn btn-outline-light btn-lg mt-4">Solicitar Demo Personalizada</a>
         </div>
       </section>
