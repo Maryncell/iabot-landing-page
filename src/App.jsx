@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import './style.css'; // Asegúrate de que tus estilos originales estén importados
+import React, { useState, useEffect, useRef } from 'react'; // Importa useRef
+import './style.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb } from '@fortawesome/free-solid-svg-icons'; // Nuevos iconos para las demos
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard } from '@fortawesome/free-solid-svg-icons'; // Nuevo icono para pagos
 
-// Importa y carga Stripe.js (esto es lo recomendado por Stripe para el frontend)
-// window.Stripe se hará globalmente disponible una vez que el script se cargue.
+// Importa y carga Stripe.js
 const loadStripeScript = () => {
   return new Promise((resolve) => {
     if (window.Stripe) {
-      resolve(window.Stripe); // <<<< CORREGIDO: De 'Stupe' a 'Stripe'
+      resolve(window.Stripe); 
       return;
     }
     const script = document.createElement('script');
@@ -23,9 +22,13 @@ const App = () => {
     name: '',
     email: '',
     phone: '',
-    plan: 'Básico',
+    plan: 'Básico', 
     message: ''
   });
+
+  // NUEVOS ESTADOS PARA EL FORMULARIO DE PAGO DIRECTO
+  const [directPaymentName, setDirectPaymentName] = useState('');
+  const [directPaymentEmail, setDirectPaymentEmail] = useState('');
 
   const [planes, setPlanes] = useState([]);
   const [features, setFeatures] = useState([]);
@@ -37,7 +40,7 @@ const App = () => {
   const [errorFeatures, setErrorFeatures] = useState(null);
   const [stripePromise, setStripePromise] = useState(null); 
 
-  // NUEVOS ESTADOS PARA EL CHATBOT DEMO MEJORADO
+  // ESTADOS PARA EL CHATBOT DEMO MEJORADO
   const [chatHistory, setChatHistory] = useState([]); 
   const [currentMessage, setCurrentMessage] = useState(''); 
   const [selectedDemoFeatures, setSelectedDemoFeatures] = useState({ 
@@ -50,10 +53,11 @@ const App = () => {
   });
   const [demoContext, setDemoContext] = useState(null); 
 
+  // Referencia para el scroll a la sección de pago
+  const directPaymentSectionRef = useRef(null);
+
   // CLAVE PUBLICABLE DE STRIPE (¡MODO DE PRUEBA!)
-  // Obtén esta clave de tu Dashboard de Stripe en la sección "Desarrolladores" -> "Claves de API"
-  // ¡Es la que empieza con 'pk_test_...'! NO ES LA CLAVE SECRETA.
-  const STRIPE_PUBLIC_KEY = 'pk_test_TU_CLAVE_PUBLICABLE_GENERADA_POR_STRIPE'; 
+  const STRIPE_PUBLIC_KEY = 'pk_test_51RcVgRCMnk8vxlKvTECJwdsLCz2PlvqjWJGdem4i9odVOFsy8wxSN618xqAq3nKvmw8UWsPM3AyvqI5s1y1ybnjq006pPAgkOh'; 
 
   // Cargar Stripe.js cuando el componente se monta
   useEffect(() => {
@@ -73,7 +77,9 @@ const App = () => {
         const data = await response.json();
         setPlanes(data);
         if (data.length > 0) {
+          // Inicializa el plan en el formulario de contacto y en el pago directo
           setFormData(prev => ({ ...prev, plan: data[0].nombre }));
+          // directPaymentName and directPaymentEmail are kept empty initially
         }
       } catch (error) {
         console.error("Error al obtener los planes:", error);
@@ -122,7 +128,7 @@ const App = () => {
 
   const calculateTotalPrice = () => {
     let total = 0;
-    const currentPlan = planes.find(p => p.nombre === formData.plan);
+    const currentPlan = planes.find(p => p.nombre === formData.plan); // Usa formData.plan
     if (currentPlan) {
       total += currentPlan.precio;
     }
@@ -135,11 +141,20 @@ const App = () => {
     return total.toFixed(2);
   };
 
+  // NUEVA FUNCION: Selecciona el plan y desplaza la vista al formulario de pago
+  const handleSelectPlanForPayment = (planName) => {
+    setFormData(prev => ({ ...prev, plan: planName }));
+    if (directPaymentSectionRef.current) {
+      directPaymentSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+
   // Manejador de clic para iniciar el proceso de pago con Stripe
   const handleCheckout = async () => {
-    if (!formData.name || !formData.email || !formData.plan) {
-      alert("Por favor, completa tu nombre y email en el formulario de contacto para proceder con el pago.");
-      document.getElementById('contact-section').scrollIntoView({ behavior: 'smooth' });
+    // Usa los nuevos estados de pago directo
+    if (!directPaymentName || !directPaymentEmail || !formData.plan) {
+      alert("Por favor, completa tu nombre y email en la sección de pago para proceder.");
       return;
     }
 
@@ -154,10 +169,10 @@ const App = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          plan: formData.plan, 
+          plan: formData.plan, // Usa el plan seleccionado del estado general
           selectedFeaturesIds: selectedFeatureIds, 
-          email: formData.email, 
-          name: formData.name,   
+          email: directPaymentEmail, // Usa el email del formulario de pago directo
+          name: directPaymentName,   // Usa el nombre del formulario de pago directo
           totalPrice: calculateTotalPrice() 
         }),
       });
@@ -179,27 +194,27 @@ const App = () => {
           alert(result.error.message); 
         }
       } else {
-        alert("La librería de Stripe no está cargada correctamente. Por favor, intenta de nuevo.");
+        alert("La librería de Stripe no está cargada correctamente. Por favor, asegúrate de que el script de Stripe se carga una sola vez y que no hay bloqueadores de anuncios.");
       }
 
     } catch (error) {
       console.error('Error durante el proceso de pago:', error);
-      alert('Hubo un error al iniciar el proceso de pago: ' + error.message);
+      alert('Hubo un error al iniciar el proceso de pago: ' + error.message + '. Por favor, asegúrate de que el servidor de Flask esté funcionando correctamente y que tu clave pública de Stripe sea válida.');
     }
   };
 
-  // Manejador del envío del formulario de contacto
+  // Manejador del envío del formulario de contacto (GENERAL)
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); 
     try {
       const selectedFeatureDetails = features
         .filter(f => selectedFeatures[f.id])
         .map(f => ({ id: f.id, nombre: f.nombre, precio: f.precio }));
 
       const dataToSend = {
-        ...formData,
-        selectedFeatures: selectedFeatureDetails,
-        totalPrice: calculateTotalPrice()
+        ...formData, 
+        selectedFeatures: selectedFeatureDetails, 
+        totalPrice: calculateTotalPrice() 
       };
 
       const response = await fetch('/api/contacto', {
@@ -217,6 +232,7 @@ const App = () => {
       const responseData = await response.json();
       alert(`¡Gracias ${formData.name}! ${responseData.message}`);
 
+      // Resetear el formulario de contacto (no el de pago directo)
       setFormData({
         name: '',
         email: '',
@@ -224,6 +240,7 @@ const App = () => {
         plan: planes.length > 0 ? planes[0].nombre : 'Básico',
         message: ''
       });
+      // Resetear el estado de las funciones seleccionadas a su estado inicial (ninguna seleccionada)
       const initialSelected = features.reduce((acc, feature) => {
         acc[feature.id] = false;
         return acc;
@@ -245,6 +262,23 @@ const App = () => {
   };
 
   // --- FUNCIONES PARA EL CHATBOT DEMO MEJORADO ---
+
+  // Manejador para enviar mensajes en el chat del demo
+  const handleSendMessage = (e) => { 
+    e.preventDefault(); 
+    if (currentMessage.trim() === '') return; 
+
+    const userMsg = currentMessage;
+
+    setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
+    setCurrentMessage(''); 
+
+    setTimeout(() => {
+      const botMsg = getBotResponse(userMsg);
+      setChatHistory(prev => [...prev, { sender: 'bot', text: botMsg }]);
+    }, 500); 
+  };
+
 
   // Manejador para alternar las funciones de demo y reiniciar el chat
   const handleDemoFeatureToggle = (featureName) => {
@@ -334,7 +368,7 @@ const App = () => {
         return "¡Excelente! Para recomendarte el plan ideal, ¿podrías decirme cuál es el principal desafío de tu negocio en este momento? (ej. automatización, soporte 24/7, generación de leads)";
     }
 
-    // 4. Respuestas predefinidas generales (si ninguna función de demo o contexto es relevante)
+    // 4. Respuestas predefinidas generales (if no demo feature or context is relevant)
     if (lowerMsg.includes("hola")) {
       return "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
     } else if (lowerMsg.includes("precio") || lowerMsg.includes("costo") || lowerMsg.includes("planes")) {
@@ -350,24 +384,6 @@ const App = () => {
       return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave.`;
     }
     return "¿Podrías repetir eso? Para una demo más avanzada, selecciona las funcionalidades y usa las sugerencias.";
-  };
-
-  // Manejador para enviar mensajes en el chat del demo
-  const handleSendMessage = (e) => { // <--- ¡AQUÍ ESTÁ DEFINIDA LA FUNCIÓN!
-    e.preventDefault(); // Previene la recarga de la página si es un formulario
-    if (currentMessage.trim() === '') return; // No enviar mensajes vacíos
-
-    const userMsg = currentMessage;
-
-    // 1. Añadir mensaje del usuario al historial
-    setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
-    setCurrentMessage(''); // Limpiar el input
-
-    // 2. Simular tiempo de respuesta del bot y añadir su mensaje
-    setTimeout(() => {
-      const botMsg = getBotResponse(userMsg);
-      setChatHistory(prev => [...prev, { sender: 'bot', text: botMsg }]);
-    }, 500); // Retraso de 0.5 segundos para simular "pensamiento" del bot
   };
 
   // Genera botones de sugerencia dinámicamente basados en el contexto y las funciones activas
@@ -450,6 +466,9 @@ const App = () => {
                 <a className="nav-link" href="#addons-section">Funciones Adicionales</a>
               </li>
               <li className="nav-item">
+                <a className="nav-link" href="#direct-payment-section">Pagar Ahora</a> {/* Nuevo enlace a la sección de pago */}
+              </li>
+              <li className="nav-item">
                 <a className="nav-link" href="#demo-section">Demo</a>
               </li>
               <li className="nav-item">
@@ -529,7 +548,7 @@ const App = () => {
                     </ul>
                     <button
                       className={`btn ${index === 1 ? 'btn-light' : 'btn-custom'} w-100`}
-                      onClick={() => setFormData(prev => ({...prev, plan: plan.nombre}))}
+                      onClick={() => handleSelectPlanForPayment(plan.nombre)} // Usa la nueva función
                     >
                       Contratar
                     </button>
@@ -574,17 +593,67 @@ const App = () => {
               ))
             )}
           </div>
-          {/* Resumen del precio total estimado */}
-          <div className="text-center mt-5 p-4 bg-light text-dark rounded shadow-lg">
-            <h3 className="mb-3">Precio Total Estimado:</h3>
-            <p className="display-4 fw-bold text-primary">${calculateTotalPrice()}</p>
-            <p className="lead">Incluye el plan seleccionado y las funciones adicionales.</p>
-            <button type="button" className="btn btn-custom btn-lg mt-3" onClick={handleCheckout}>
-              Proceder al Pago
-            </button>
+          {/* Aquí NO estará el botón de checkout, ahora está en la nueva sección */}
+          {/* El resumen del precio total se replicará en la sección de pago directo */}
+        </div>
+      </section>
+
+      {/* NUEVA Sección de Pago Directo */}
+      <section id="direct-payment-section" className="py-5 bg-dark text-white" ref={directPaymentSectionRef}>
+        <div className="container text-center">
+          <h2 className="mb-4">¡Listo para Pagar!</h2>
+          <p className="lead mb-4">Confirma tu selección y procede al pago de forma segura con Stripe.</p>
+
+          {/* Resumen del precio total estimado (replicado aquí) */}
+          <div className="text-center mt-3 p-4 bg-light text-dark rounded shadow-lg mx-auto" style={{ maxWidth: '500px' }}>
+            <h3 className="mb-3">Tu Selección:</h3>
+            <p className="h5 mb-2">Plan: <strong className="text-primary">{formData.plan}</strong></p>
+            <p className="h6 mb-2">Funciones Adicionales:</p>
+            <ul className="list-unstyled mb-3">
+                {features.filter(f => selectedFeatures[f.id]).map(f => (
+                    <li key={f.id} className="ms-3"><FontAwesomeIcon icon={faCheck} className="me-2 text-success" /> {f.nombre} (${f.precio})</li>
+                ))}
+                {features.filter(f => selectedFeatures[f.id]).length === 0 && (
+                    <li className="ms-3 text-muted">Ninguna función adicional seleccionada.</li>
+                )}
+            </ul>
+            <h4 className="fw-bold">TOTAL A PAGAR: <span className="display-5 fw-bold text-primary">${calculateTotalPrice()}</span></h4>
+          </div>
+
+          <div className="row justify-content-center mt-4">
+            <div className="col-lg-6">
+              <form className="row g-3">
+                <div className="col-md-6">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tu Nombre (requerido para Stripe)"
+                    required
+                    value={directPaymentName}
+                    onChange={(e) => setDirectPaymentName(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="Tu Email (requerido para Stripe)"
+                    required
+                    value={directPaymentEmail}
+                    onChange={(e) => setDirectPaymentEmail(e.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <button type="button" className="btn btn-custom btn-lg mt-3" onClick={handleCheckout}>
+                    <FontAwesomeIcon icon={faCreditCard} className="me-2" /> Proceder al Pago Seguro con Stripe
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
+
 
       {/* Demo Section - Sección de demostración del bot (MEJORADA) */}
       <section id="demo-section" className="py-5">
@@ -628,7 +697,7 @@ const App = () => {
                   />
                   <label className="form-check-label" htmlFor="leadQualSwitch">Calificación de Lead</label>
                 </div>
-                 <div className="form-check form-switch"> {/* Nueva demo feature */}
+                 <div className="form-check form-switch"> 
                   <input 
                     className="form-check-input" 
                     type="checkbox" 
@@ -638,7 +707,7 @@ const App = () => {
                   />
                   <label className="form-check-label" htmlFor="faqResponderSwitch">FAQs Inteligentes</label>
                 </div>
-                <div className="form-check form-switch"> {/* Nueva demo feature */}
+                <div className="form-check form-switch"> 
                   <input 
                     className="form-check-input" 
                     type="checkbox" 
@@ -648,7 +717,7 @@ const App = () => {
                   />
                   <label className="form-check-label" htmlFor="dataCollectionSwitch">Recopilación de Datos</label>
                 </div>
-                 <div className="form-check form-switch"> {/* Nueva demo feature */}
+                 <div className="form-check form-switch"> 
                   <input 
                     className="form-check-input" 
                     type="checkbox" 
@@ -684,7 +753,7 @@ const App = () => {
                         className="btn btn-outline-light btn-sm suggestion-button" 
                         onClick={() => {
                             setCurrentMessage(suggestion.text);
-                            handleSendMessage({ preventDefault: () => {} }); // Llamada a handleSendMessage aquí
+                            handleSendMessage({ preventDefault: () => {} }); 
                         }}
                     >
                         {suggestion.text}
@@ -782,12 +851,13 @@ const App = () => {
         </div>
       </section>
 
-      {/* Contact Section - Sección del formulario de contacto */}
+      {/* Contact Section - Sección del formulario de contacto (PARA CONSULTAS GENERALES) */}
       <section id="contact-section" className="py-5 bg-dark text-white">
         <div className="container">
           <div className="row justify-content-center">
             <div className="col-lg-8 text-center">
-              <h2 className="mb-4">¿Listo para comenzar?</h2>
+              <h2 className="mb-4">¿Tienes otras preguntas? ¡Contáctanos!</h2>
+              <p className="lead mb-4">Si deseas una demo personalizada o tienes más preguntas no relacionadas con el pago, completa este formulario.</p>
               <form onSubmit={handleSubmit} className="row g-3 justify-content-center">
                 <div className="col-md-6">
                   <input
@@ -842,7 +912,7 @@ const App = () => {
                   </select>
                 </div>
                 <div className="col-12 mt-4 text-start">
-                    <h4>Resumen de tu selección:</h4>
+                    <h4>Resumen de tu selección actual:</h4>
                     <ul className="list-unstyled">
                         <li><strong>Plan:</strong> {formData.plan} - ${planes.find(p => p.nombre === formData.plan)?.precio || 'N/A'}</li>
                         <li><strong>Funciones Adicionales:</strong></li>

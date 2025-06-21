@@ -151,8 +151,8 @@ body {
   flex-direction: column;
   justify-content: space-between;
   /* Ajustar colores para que concuerden con el tema */
-  background-color: var(--dark-color);
-  color: white;
+  background-color: var(--dark-color); /* Fondo de la tarjeta por defecto */
+  color: white; /* Color del texto por defecto */
 }
 
 .feature-addon-card:hover {
@@ -171,7 +171,7 @@ body {
 
 
 .feature-addon-card.bg-secondary { /* Esta clase se usa cuando NO está seleccionada (reemplaza bg-secondary original de bootstrap) */
-    background-color: var(--secondary-color) !important;
+    background-color: var(--secondary-color) !important; /* Color azul oscuro medio */
     color: white !important;
     border-color: transparent;
 }
@@ -258,4 +258,34 @@ body {
     color: var(--darker-color);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Estilos para la nueva sección de pago directo */
+#direct-payment-section {
+    background: linear-gradient(to right, var(--darker-color), #203a43); /* Un degradado más sutil */
+    padding: 4rem 0;
+    color: white;
+}
+
+#direct-payment-section input.form-control {
+    background-color: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+}
+
+#direct-payment-section input.form-control::placeholder {
+    color: rgba(255,255,255,0.7);
+}
+
+#direct-payment-section .btn-custom {
+    background-color: var(--primary-color);
+    color: var(--darker-color);
+}
+
+#direct-payment-section .text-primary {
+    color: var(--primary-color) !important;
+}
+
+#direct-payment-section .text-success {
+    color: #28a745 !important; /* Verde de Bootstrap */
 }
