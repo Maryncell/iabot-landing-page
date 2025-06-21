@@ -3,24 +3,21 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
-import json # Importar para manejar JSON en la base de datos
-from flask_mail import Mail, Message # Importar para funcionalidades de email
+import json
+from flask_mail import Mail, Message
+import stripe # Importar la librería de Stripe
 
 # Cargar variables de entorno desde el archivo .env
-# Esto debe ir al principio para que las variables estén disponibles para la configuración de Flask.
 load_dotenv()
 
 app = Flask(__name__, static_folder='dist')
 
-# Inicializar CORS con tu aplicación Flask
-# Esto habilitará CORS para todas las rutas y orígenes por defecto.
-# Para producción, se recomienda configurar orígenes específicos para mayor seguridad.
+# Inicializar CORS para permitir solicitudes desde el frontend
 CORS(app)
 
 # Configuración de Flask-Mail (obtenida de variables de entorno)
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT'))
-# Convierte la cadena 'True' o 'False' a booleano
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'False').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
@@ -28,10 +25,12 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 mail = Mail(app) # Inicializar la extensión Flask-Mail
 
-# Configuración de la base de datos
-# Usaremos SQLite para el MVP. La ruta 'sqlite:///site.db' crea un archivo site.db en la raíz del proyecto.
+# Configurar la clave secreta de Stripe (¡IMPORTANTE: Usar la clave de TEST en desarrollo!)
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+
+# Configuración de la base de datos (SQLite)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///site.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Para deshabilitar advertencias, no es esencial para el funcionamiento
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
@@ -40,7 +39,7 @@ class Plan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(80), unique=True, nullable=False)
     precio = db.Column(db.Float, nullable=False)
-    descripcion = db.Column(db.Text, nullable=True) # Campo para la descripción detallada del plan
+    descripcion = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f'<Plan {self.nombre}>'
@@ -50,7 +49,7 @@ class Feature(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(80), unique=True, nullable=False)
     precio = db.Column(db.Float, nullable=False)
-    descripcion = db.Column(db.Text, nullable=True) # Descripción de la función
+    descripcion = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f'<Feature {self.nombre}>'
@@ -62,16 +61,14 @@ class ContactSubmission(db.Model):
     email = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     plan_selected = db.Column(db.String(80), nullable=False)
-    # Almacenamos las funciones seleccionadas como una cadena JSON
     selected_features_json = db.Column(db.Text, nullable=True) 
     total_price = db.Column(db.Float, nullable=False)
     message = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp()) # Fecha y hora de la consulta
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def __repr__(self):
         return f'<ContactSubmission {self.name} - {self.plan_selected}>'
 
-    # Método para serializar una instancia del modelo a un diccionario (útil para jsonify)
     def to_dict(self):
         return {
             "id": self.id,
@@ -96,7 +93,7 @@ def static_files(path):
     return send_from_directory(app.static_folder, path)
 
 
-# Endpoint para el formulario de contacto (Ahora guarda en la DB y envía email)
+# Endpoint para el formulario de contacto (Guarda en la DB y envía email)
 @app.route('/api/contacto', methods=['POST'])
 def contacto():
     data = request.get_json()
@@ -107,40 +104,34 @@ def contacto():
     email = data.get('email')
     phone = data.get('phone')
     plan = data.get('plan')
-    message_from_form = data.get('message') # Renombrado para evitar conflicto con Message de Flask-Mail
+    message_from_form = data.get('message')
     selected_features = data.get('selectedFeatures', [])
     total_price = data.get('totalPrice')
 
-    # Validaciones básicas de datos recibidos
     if not name or not email or not plan or total_price is None:
         return jsonify({"status": "error", "message": "Datos obligatorios faltantes (nombre, email, plan, precio total)."}), 400
 
     try:
-        # Convertir la lista de funciones seleccionadas a una cadena JSON para almacenar en DB
         selected_features_json = json.dumps(selected_features)
 
-        # Crear una nueva instancia de ContactSubmission
         new_submission = ContactSubmission(
             name=name,
             email=email,
             phone=phone,
             plan_selected=plan,
             selected_features_json=selected_features_json,
-            total_price=float(total_price), # Asegurarse de que el precio sea un float
-            message=message_from_form # Usar el mensaje renombrado
+            total_price=float(total_price),
+            message=message_from_form
         )
-        db.session.add(new_submission) # Añadir a la sesión de la base de datos
-        db.session.commit() # Guardar los cambios en la base de datos
-
+        db.session.add(new_submission)
+        db.session.commit()
         print(f"Nueva consulta de contacto guardada en DB: {new_submission.name} - Plan: {new_submission.plan_selected}")
 
-        # --- Lógica para enviar el correo electrónico de notificación ---
         notification_email_address = os.getenv('NOTIFICATION_EMAIL')
         if notification_email_address:
             msg = Message(
                 subject=f"Nueva Consulta IABOT de: {name} (Plan: {plan})",
                 recipients=[notification_email_address],
-                # Aquí puedes usar HTML para un email más bonito y estructurado
                 html=f"""
                 <p>Hola,</p>
                 <p>Has recibido una nueva consulta a través de tu página de IABOT Soluciones.</p>
@@ -152,14 +143,9 @@ def contacto():
                 </ul>
                 <p><strong>Selección del Plan y Funciones:</strong></p>
                 <ul>
-                    <li><strong>Plan Seleccionado:</strong> {plan}</li>
-                    <li><strong>Funciones Adicionales:</strong>
-                        <ul>
-                            {''.join([f'<li>{f["nombre"]} (${f["precio"]:.2f})</li>' for f in selected_features]) if selected_features else '<li>Ninguna</li>'}
-                        </ul>
-                    </li>
-                    <li><strong>Precio Total Estimado:</strong> ${float(total_price):.2f}</li>
+                    {''.join([f'<li>{f["nombre"]} (${f["precio"]:.2f})</li>' for f in selected_features]) if selected_features else '<li>Ninguna</li>'}
                 </ul>
+                <li><strong>Precio Total Estimado:</strong> ${float(total_price):.2f}</li>
                 <p><strong>Mensaje del Cliente:</strong></p>
                 <p>{message_from_form if message_from_form else 'No proporcionado'}</p>
                 <br/>
@@ -172,7 +158,6 @@ def contacto():
                 print(f"Email de notificación enviado a {notification_email_address}")
             except Exception as mail_error:
                 print(f"ERROR al enviar email de notificación: {mail_error}")
-                # Puedes elegir cómo manejar este error: mostrarlo al usuario o solo loguearlo
         else:
             print("ADVERTENCIA: NOTIFICATION_EMAIL no configurado en .env. No se envió email de notificación.")
 
@@ -181,18 +166,16 @@ def contacto():
     except ValueError:
         return jsonify({"status": "error", "message": "El precio total no es un número válido."}), 400
     except Exception as e:
-        db.session.rollback() # En caso de error, deshacer la transacción para mantener la DB consistente
+        db.session.rollback()
         print(f"Error general en contacto endpoint: {e}")
         return jsonify({"status": "error", "message": "Error interno del servidor al procesar la consulta."}), 500
 
 
 # --- ENDPOINTS PARA LA BASE DE DATOS (PLANES) ---
-
-# Endpoint GET para obtener todos los planes
 @app.route('/api/planes', methods=['GET'])
 def get_planes():
     try:
-        planes = Plan.query.order_by(Plan.id).all() # Ordenar por id para consistencia
+        planes = Plan.query.order_by(Plan.id).all()
         planes_data = [
             {"id": p.id, "nombre": p.nombre, "precio": p.precio, "descripcion": p.descripcion}
             for p in planes
@@ -202,7 +185,6 @@ def get_planes():
         print(f"Error al obtener planes: {e}")
         return jsonify({"error": "Error interno del servidor al obtener planes"}), 500
 
-# Endpoint POST para añadir un nuevo plan (útil para pruebas o administración)
 @app.route('/api/planes', methods=['POST'])
 def add_plan():
     data = request.get_json()
@@ -234,8 +216,6 @@ def add_plan():
 
 
 # --- ENDPOINTS PARA LAS FUNCIONES ADICIONALES ---
-
-# Endpoint GET para obtener todas las funciones adicionales
 @app.route('/api/features', methods=['GET'])
 def get_features():
     try:
@@ -249,7 +229,6 @@ def get_features():
         print(f"Error al obtener funciones: {e}")
         return jsonify({"error": "Error interno del servidor al obtener funciones"}), 500
 
-# Endpoint POST para añadir una nueva función (útil para administración)
 @app.route('/api/features', methods=['POST'])
 def add_feature():
     data = request.get_json()
@@ -279,18 +258,123 @@ def add_feature():
         print(f"Error al añadir función: {e}")
         return jsonify({"error": "Error interno del servidor al añadir función"}), 500
 
-# Endpoint para ver todas las consultas de contacto guardadas (para administración)
+# Endpoint para ver todas las consultas de contacto guardadas
 @app.route('/api/submissions', methods=['GET'])
 def get_submissions():
     try:
-        # Ordenar por timestamp para ver las más recientes primero
         submissions = ContactSubmission.query.order_by(ContactSubmission.timestamp.desc()).all()
-        # Convertir cada objeto de consulta a diccionario usando el método to_dict()
         submissions_data = [sub.to_dict() for sub in submissions]
         return jsonify(submissions_data), 200
     except Exception as e:
         print(f"Error al obtener consultas: {e}")
         return jsonify({"error": "Error interno del servidor al obtener consultas"}), 500
+
+
+# --- NUEVOS ENDPOINTS PARA LA INTEGRACIÓN DE PAGOS CON STRIPE ---
+
+# Endpoint para crear una sesión de pago con Stripe Checkout
+@app.route('/api/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No se recibieron datos para la sesión de pago"}), 400
+
+    plan_nombre = data.get('plan')
+    # Recibimos una lista de IDs de las funciones seleccionadas
+    selected_features_ids = data.get('selectedFeaturesIds', []) 
+    cliente_email = data.get('email', 'cliente@ejemplo.com') # Usar el email del formulario para Stripe
+    cliente_nombre = data.get('name', 'Cliente IABOT')
+
+    if not plan_nombre:
+        return jsonify({"error": "Plan no especificado para la sesión de pago"}), 400
+
+    line_items = []
+    total_amount_calculated = 0
+
+    try:
+        # 1. Buscar el plan en la DB y añadirlo a line_items
+        plan_obj = Plan.query.filter_by(nombre=plan_nombre).first()
+        if not plan_obj:
+            return jsonify({"error": f"Plan '{plan_nombre}' no encontrado"}), 404
+        
+        line_items.append({
+            'price_data': {
+                'currency': 'usd', # Moneda. 'usd' es universal para pruebas. En producción, podrías usar 'ars'.
+                'product_data': {
+                    'name': plan_obj.nombre,
+                    'description': f"Plan base: {plan_obj.nombre}",
+                    'images': ['https://placehold.co/100x100/0f2027/4cc9f0?text=Plan'] # Imagen placeholder para el producto
+                },
+                'unit_amount': int(plan_obj.precio * 100), # Stripe usa centavos, así que multiplicamos por 100
+            },
+            'quantity': 1,
+        })
+        total_amount_calculated += plan_obj.precio
+
+        # 2. Buscar las funciones en la DB y añadirlas a line_items
+        for feature_id in selected_features_ids:
+            feature_obj = Feature.query.get(feature_id)
+            if feature_obj:
+                line_items.append({
+                    'price_data': {
+                        'currency': 'usd', # Moneda
+                        'product_data': {
+                            'name': feature_obj.nombre,
+                            'description': f"Función adicional: {feature_obj.nombre}",
+                            'images': ['https://placehold.co/100x100/0f2027/4cc9f0?text=Addon'] # Imagen placeholder
+                        },
+                        'unit_amount': int(feature_obj.precio * 100), # Centavos
+                    },
+                    'quantity': 1,
+                })
+                total_amount_calculated += feature_obj.precio
+            else:
+                print(f"ADVERTENCIA: Función con ID {feature_id} no encontrada en la base de datos. Se omitirá.")
+
+        if not line_items:
+            return jsonify({"error": "No se encontraron ítems válidos para la compra."}), 400
+
+        # Crear la sesión de Stripe Checkout
+        checkout_session = stripe.checkout.Session.create(
+            # Configura los tipos de método de pago. 'card' es universal.
+            # Puedes añadir 'pm_mercadopago' si tu cuenta de Stripe en AR está configurada para ello.
+            payment_method_types=['card'], 
+            line_items=line_items,
+            mode='payment',
+            # URLs a las que Stripe redirigirá después del pago.
+            # request.url_root asegura que funcione tanto en localhost como en un despliegue.
+            success_url=request.url_root + 'success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.url_root + 'cancel',
+            # Añadir email del cliente para pre-rellenar el formulario de Stripe
+            customer_email=cliente_email, 
+            metadata={ # Metadatos opcionales para tu registro en Stripe
+                'plan_nombre': plan_nombre,
+                'cliente_nombre': cliente_nombre,
+                'cliente_email': cliente_email,
+                'precio_calculado_backend': f"{total_amount_calculated:.2f}"
+            }
+        )
+        return jsonify({'id': checkout_session.id})
+
+    except stripe.error.StripeError as e:
+        print(f"Error de Stripe al crear sesión: {e}")
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        print(f"Error inesperado al crear sesión de pago: {e}")
+        return jsonify({'error': 'Error interno del servidor al crear sesión de pago'}), 500
+
+# Rutas de éxito y cancelación para Stripe Checkout.
+# Simplemente redirigen al index.html del frontend por ahora.
+# En una aplicación más compleja, el frontend podría leer el session_id
+# para mostrar un mensaje de éxito/error más específico.
+@app.route('/success')
+def success():
+    # El session_id se puede obtener de request.args.get('session_id') si es necesario
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/cancel')
+def cancel():
+    return send_from_directory(app.static_folder, 'index.html')
 
 
 if __name__ == '__main__':
@@ -363,7 +447,4 @@ if __name__ == '__main__':
         else:
             print("La base de datos ya contiene funciones adicionales. No se insertan funciones iniciales.")
 
-    # Iniciar el servidor Flask
-    # 'debug=True' es excelente para desarrollo ya que recarga el servidor en cambios.
-    # ¡Recuerda deshabilitarlo en producción!
     app.run(port=3000, debug=True)
