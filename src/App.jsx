@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'; // Importa useRef
 import './style.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard } from '@fortawesome/free-solid-svg-icons'; // Nuevo icono para pagos
+// Íconos sólidos y de marcas
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn } from '@fortawesome/free-solid-svg-icons'; 
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'; // Importación correcta para faWhatsapp
 
 // Importa y carga Stripe.js
 const loadStripeScript = () => {
@@ -327,11 +329,11 @@ const App = () => {
     // 2. Manejar funciones de demo activadas (palabras clave específicas)
     // PRIORIDAD: Respuestas específicas de funcionalidades de demo si están activas
     if (selectedDemoFeatures.whatsapp && (lowerMsg.includes("whatsapp") || lowerMsg.includes("multicanal") || lowerMsg.includes("telegram"))) {
-        return "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están.";
+        return "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están. Si deseas explorar más, haz clic en el botón 'Hablar con un Experto por WhatsApp' debajo del chat.";
     }
 
     if (selectedDemoFeatures.humanAgent && (lowerMsg.includes("agente") || lowerMsg.includes("humano") || lowerMsg.includes("hablar con alguien"))) {
-        return "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'.";
+        return "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'. Haz clic en el botón 'Hablar con un Experto por WhatsApp' debajo del chat para continuar.";
     }
 
     if (selectedDemoFeatures.faqResponder) {
@@ -370,18 +372,18 @@ const App = () => {
 
     // 4. Respuestas predefinidas generales (if no demo feature or context is relevant)
     if (lowerMsg.includes("hola")) {
-      return "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
+      return "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy? Para explorar nuestras capacidades, puedes activar las funciones de demo en la parte superior del chat.";
     } else if (lowerMsg.includes("precio") || lowerMsg.includes("costo") || lowerMsg.includes("planes")) {
-      return "Puedes ver nuestros planes y funciones adicionales en las secciones 'Planes' y 'Funciones Adicionales' de esta página. ¡Haz clic para explorar!";
+      return "Puedes ver nuestros planes y funciones adicionales en las secciones 'Planes' y 'Funciones Adicionales' de esta página. ¡Haz clic para explorar! Si tienes preguntas específicas, ¡prueba activar las funciones de demo!";
     } else if (lowerMsg.includes("gracias")) {
       return "¡De nada! Estoy aquí para ayudarte a transformar tu negocio.";
     } else if (lowerMsg.includes("contacto")) {
-      return "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. ¡Te esperamos!";
+      return "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. También puedes hacer clic en el botón 'Hablar con un Experto por WhatsApp' debajo del chat.";
     } 
 
-    // 5. Respuesta por defecto si nada de lo anterior se activa
+    // 5. Respuesta por defecto si nada de lo anterior se activa y el bot sugiere WhatsApp
     if (userMsg.length > 0) {
-      return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave.`;
+      return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave. Si necesitas ayuda más específica, te sugiero hacer clic en "Hablar con un Experto por WhatsApp".`;
     }
     return "¿Podrías repetir eso? Para una demo más avanzada, selecciona las funcionalidades y usa las sugerencias.";
   };
@@ -460,13 +462,16 @@ const App = () => {
                 <a className="nav-link" href="#features-section">Características</a>
               </li>
               <li className="nav-item">
+                <a className="nav-link" href="#services-section">Nuestros Servicios</a> {/* Nuevo enlace */}
+              </li>
+              <li className="nav-item">
                 <a className="nav-link" href="#plans-section">Planes</a>
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#addons-section">Funciones Adicionales</a>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#direct-payment-section">Pagar Ahora</a> {/* Nuevo enlace a la sección de pago */}
+                <a className="nav-link" href="#direct-payment-section">Pagar Ahora</a> 
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#demo-section">Demo</a>
@@ -524,6 +529,70 @@ const App = () => {
         </div>
       </section>
 
+      {/* REVISADA: Sección de Servicios (Enfoque en el Cliente) */}
+      <section id="services-section" className="py-5 bg-secondary text-white">
+        <div className="container">
+          <h2 className="text-center mb-5">Transforma la Interacción con tus Clientes en WhatsApp</h2>
+          <p className="lead text-center mb-5">Ofrecemos soluciones de agentes inteligentes que se adaptan al crecimiento de tu empresa, automatizando la atención, potenciando tus ventas y mejorando la experiencia del cliente directamente en WhatsApp.</p>
+          
+          <div className="row text-center">
+            {/* Servicio 1: Venta y Generación de Leads */}
+            <div className="col-md-4 mb-4">
+              <div className="service-item p-4 rounded shadow-sm h-100 bg-darker-color">
+                <FontAwesomeIcon icon={faShoppingCart} size="3x" className="text-primary mb-3" />
+                <h3 className="h5">Vende Más y Genera Leads</h3>
+                <p>Nuestros agentes te ayudan a capturar clientes potenciales 24/7, recomendar productos o servicios de forma inteligente y guiar a tus usuarios en el proceso de compra.</p>
+              </div>
+            </div>
+            {/* Servicio 2: Atención al Cliente Profesional */}
+            <div className="col-md-4 mb-4">
+              <div className="service-item p-4 rounded shadow-sm h-100 bg-darker-color">
+                <FontAwesomeIcon icon={faConciergeBell} size="3x" className="text-primary mb-3" />
+                <h3 className="h5">Atención al Cliente Inteligente</h3>
+                <p>Resuelve dudas frecuentes al instante, brinda soporte personalizado y transfiere conversaciones a un agente humano cuando sea necesario, sin esperas ni fricciones.</p>
+              </div>
+            </div>
+            {/* Servicio 3: Agenda y Gestión Automatizada */}
+            <div className="col-md-4 mb-4">
+              <div className="service-item p-4 rounded shadow-sm h-100 bg-darker-color">
+                <FontAwesomeIcon icon={faCalendarAlt} size="3x" className="text-primary mb-3" />
+                <h3 className="h5">Agenda Citas y Tareas Automáticas</h3>
+                <p>Automatiza la reserva de citas, gestiona recordatorios y organiza tareas de seguimiento directamente desde WhatsApp, optimizando el tiempo de tu equipo.</p>
+              </div>
+            </div>
+            {/* Servicio 4: Clasificación y Calificación */}
+            <div className="col-md-4 mb-4">
+              <div className="service-item p-4 rounded shadow-sm h-100 bg-darker-color">
+                <FontAwesomeIcon icon={faTasks} size="3x" className="text-primary mb-3" />
+                <h3 className="h5">Clasificación y Cualificación de Clientes</h3>
+                <p>Identifica y segmenta a tus clientes automáticamente según sus intereses y necesidades, permitiéndote enfocar tus esfuerzos en los prospectos más valiosos.</p>
+              </div>
+            </div>
+            {/* Servicio 5: Comunicación Masiva y Marketing */}
+            <div className="col-md-4 mb-4">
+              <div className="service-item p-4 rounded shadow-sm h-100 bg-darker-color">
+                <FontAwesomeIcon icon={faBullhorn} size="3x" className="text-primary mb-3" />
+                <h3 className="h5">Campañas y Notificaciones Efectivas</h3>
+                <p>Envía mensajes masivos y personalizados para tus campañas de marketing, lanzamientos o notificaciones importantes, llegando a toda tu audiencia al instante.</p>
+              </div>
+            </div>
+             {/* Servicio 6: Escalabilidad y Adaptabilidad */}
+             <div className="col-md-4 mb-4">
+              <div className="service-item p-4 rounded shadow-sm h-100 bg-darker-color">
+                <FontAwesomeIcon icon={faHandshake} size="3x" className="text-primary mb-3" />
+                <h3 className="h5">Solución Escalable y a tu Medida</h3>
+                <p>Nuestros agentes crecen contigo. Desde una solución básica hasta integraciones complejas con tus sistemas existentes, adaptamos la tecnología a tus necesidades.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-5">
+            <a href="#demo-section" className="btn btn-outline-light btn-lg me-3">¡Prueba nuestro Bot Demo!</a>
+            <a href="#contact-section" className="btn btn-custom btn-lg">Quiero un Agente Inteligente</a>
+          </div>
+        </div>
+      </section>
+
       {/* Plans Section - Sección para mostrar los planes de suscripción dinámicamente */}
       <section id="plans-section" className="py-5">
         <div className="container">
@@ -548,7 +617,7 @@ const App = () => {
                     </ul>
                     <button
                       className={`btn ${index === 1 ? 'btn-light' : 'btn-custom'} w-100`}
-                      onClick={() => handleSelectPlanForPayment(plan.nombre)} // Usa la nueva función
+                      onClick={() => handleSelectPlanForPayment(plan.nombre)} 
                     >
                       Contratar
                     </button>
@@ -593,8 +662,6 @@ const App = () => {
               ))
             )}
           </div>
-          {/* Aquí NO estará el botón de checkout, ahora está en la nueva sección */}
-          {/* El resumen del precio total se replicará en la sección de pago directo */}
         </div>
       </section>
 
@@ -775,7 +842,13 @@ const App = () => {
             </form>
           </div>
 
-          <a href="#" className="btn btn-outline-light btn-lg mt-4">Solicitar Demo Personalizada</a>
+          {/* Botón para contactar por WhatsApp (integración futura) */}
+          <a href="https://wa.me/TU_NUMERO_DE_WHATSAPP?text=Hola%2C%20estoy%20interesado%20en%20sus%20agentes%20inteligentes." 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             className="btn btn-success btn-lg mt-4">
+            <FontAwesomeIcon icon={faWhatsapp} className="me-2" /> Hablar con un Experto por WhatsApp
+          </a>
         </div>
       </section>
 
@@ -955,4 +1028,5 @@ const App = () => {
 };
 
 export default App;
+
     
