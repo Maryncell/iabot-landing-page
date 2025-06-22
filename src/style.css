@@ -13,6 +13,7 @@ body {
   color: white; /* Color de texto por defecto */
   font-family: 'Segoe UI', sans-serif; /* Fuente preferida */
   line-height: 1.6; /* Espaciado de línea */
+  overflow-x: hidden; /* Evita el scroll horizontal */
 }
 
 /* Estilos de la barra de navegación */
@@ -24,7 +25,7 @@ body {
 /* Estilos de la sección principal (Hero) */
 .hero {
   text-align: center;
-  padding: 6rem 2rem;
+  padding: 6rem 1rem; /* Ajuste para móviles */
   /* Fondo con degradado y imagen */
   background: linear-gradient(rgba(15, 32, 39, 0.7), rgba(15, 32, 39, 0.7)), url('https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
   background-size: cover;
@@ -34,6 +35,20 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+.hero h1 {
+    font-size: 2.5rem; /* Tamaño de fuente para móviles */
+}
+
+@media (min-width: 768px) {
+    .hero h1 {
+        font-size: 3.5rem; /* Tamaño de fuente para desktop */
+    }
+    .hero {
+        padding: 6rem 2rem;
+    }
+}
+
 
 /* Estilos de la sección de características (¿Por qué elegir IABOT?) */
 .features {
@@ -49,10 +64,8 @@ body {
 }
 
 /* Estilos de la sección de planes */
-/* Eliminamos el background-color directo aquí. Dejamos que el body o secciones más generales lo definan. */
 .plans {
   padding: 4rem 0;
-  /* background-color: var(--secondary-color);  <-- Este ya no debería estar si quieres el degradado del body */
 }
 
 /* Estilos de las tarjetas de cada plan */
@@ -116,15 +129,11 @@ body {
 }
 
 /* Estilos de la sección de testimonios */
-/* Eliminamos el background-color directo aquí. Dejamos que el body o las cards lo definan. */
 .testimonials {
   padding: 4rem 0;
 }
 
-/* Estilos de los cards de testimonios.
-   En App.jsx hemos añadido `bg-dark text-white` a las cards, lo cual es redundante
-   si ya el .card p-4 shadow-sm h-100 es de fondo oscuro, pero asegura el color.
-   Podríamos refactorizar esto. */
+/* Estilos de los cards de testimonios */
 .testimonials .card {
     background-color: var(--dark-color); /* Asegura el color de fondo para los cards de testimonios */
     color: white; /* Asegura el color del texto para los cards de testimonios */
@@ -190,16 +199,18 @@ body {
     color: var(--darker-color) !important;
 }
 
-/* --- NUEVOS ESTILOS PARA EL CHATBOT DEMO --- */
+/* --- ESTILOS PARA EL CHATBOT DEMO --- */
 .chatbot-container {
     border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Ajuste para responsividad */
+    width: 100%;
+    max-width: 600px;
 }
 
 .chat-history {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    /* Ajustado para dejar espacio al input, controles de demo y botones de sugerencia */
-    max-height: calc(100% - 200px); /* Ajustado para los nuevos elementos */
-    min-height: 200px; /* Asegura que el historial tenga un tamaño mínimo */
+    max-height: calc(100% - 200px); 
+    min-height: 200px; 
 }
 
 .message-bubble {
@@ -242,7 +253,7 @@ body {
     cursor: pointer;
 }
 
-/* NUEVO: Estilos para los botones de sugerencia */
+/* Estilos para los botones de sugerencia */
 .suggestion-button {
     font-size: 0.85rem;
     padding: 0.4rem 0.8rem;
@@ -300,16 +311,96 @@ body {
     color: var(--primary-color); /* Títulos de subsección en color primario */
 }
 
-#services-section .card {
-    background-color: var(--dark-color); /* Fondo de tarjetas de herramientas */
+#services-section .service-item { /* ESTILO APLICADO A LOS NUEVOS CARDS DE SERVICIOS */
+    background-color: var(--dark-color); /* Fondo de tarjetas de servicio */
     border: 1px solid rgba(255,255,255,0.1);
-    transition: transform 0.2s ease-in-out;
+    border-radius: 1rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    padding: 1.5rem; /* Ajuste para espacio interno */
 }
 
-#services-section .card:hover {
+#services-section .service-item:hover {
     transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-#services-section .list-unstyled li {
-    padding-left: 0; /* Asegura que la lista no tenga padding izquierdo extra */
+#services-section .service-item .text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* --- NUEVO: Estilos para el botón flotante de WhatsApp --- */
+.whatsapp-float-btn {
+    position: fixed; /* Hace que el botón flote */
+    bottom: 20px;    /* Margen desde abajo */
+    right: 20px;     /* Margen desde la derecha */
+    background-color: #25d366; /* Color verde de WhatsApp */
+    color: white;
+    width: 60px;     /* Tamaño del botón */
+    height: 60px;    /* Tamaño del botón */
+    border-radius: 50%; /* Forma circular */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5rem; /* Tamaño del icono */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Sombra */
+    z-index: 1000;   /* Asegura que esté por encima de otros elementos */
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    text-decoration: none; /* Quita el subrayado del enlace */
+}
+
+.whatsapp-float-btn:hover {
+    background-color: #1da851; /* Un verde más oscuro al pasar el mouse */
+    transform: scale(1.05); /* Ligeramente más grande al hacer hover */
+}
+
+.whatsapp-float-btn .whatsapp-icon {
+    /* No se necesitan estilos específicos aquí ya que el tamaño se define en el padre */
+}
+
+/* Media Queries para Responsividad General (Ajustes finos) */
+@media (max-width: 767.98px) {
+  /* Ajustes para pantallas más pequeñas (móviles) */
+  .display-4 {
+    font-size: 2.5rem; /* Títulos más pequeños */
+  }
+  .lead {
+    font-size: 1rem; /* Texto principal más pequeño */
+  }
+  .feature-icon, .service-item .svg-inline--fa { /* Ajustar tamaño de iconos */
+    font-size: 2rem;
+  }
+  .plan-card, .feature-addon-card, .service-item {
+    padding: 1.5rem; /* Reducir padding de tarjetas */
+  }
+  .btn-lg {
+    padding: 0.6rem 1.2rem; /* Botones más pequeños */
+    font-size: 0.9rem;
+  }
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  .navbar-nav .nav-link {
+    font-size: 1rem;
+    text-align: center;
+  }
+  .whatsapp-float-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+    bottom: 15px;
+    right: 15px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  /* Ajustes para tablets */
+  .display-4 {
+    font-size: 3rem;
+  }
+  .lead {
+    font-size: 1.15rem;
+  }
+  .feature-icon, .service-item .svg-inline--fa {
+    font-size: 2.2rem;
+  }
 }

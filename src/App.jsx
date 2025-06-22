@@ -329,11 +329,11 @@ const App = () => {
     // 2. Manejar funciones de demo activadas (palabras clave específicas)
     // PRIORIDAD: Respuestas específicas de funcionalidades de demo si están activas
     if (selectedDemoFeatures.whatsapp && (lowerMsg.includes("whatsapp") || lowerMsg.includes("multicanal") || lowerMsg.includes("telegram"))) {
-        return "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están. Si deseas explorar más, haz clic en el botón 'Hablar con un Experto por WhatsApp' debajo del chat.";
+        return "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están. Si deseas explorar más, haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha.";
     }
 
     if (selectedDemoFeatures.humanAgent && (lowerMsg.includes("agente") || lowerMsg.includes("humano") || lowerMsg.includes("hablar con alguien"))) {
-        return "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'. Haz clic en el botón 'Hablar con un Experto por WhatsApp' debajo del chat para continuar.";
+        return "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'. Haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha para continuar.";
     }
 
     if (selectedDemoFeatures.faqResponder) {
@@ -378,12 +378,12 @@ const App = () => {
     } else if (lowerMsg.includes("gracias")) {
       return "¡De nada! Estoy aquí para ayudarte a transformar tu negocio.";
     } else if (lowerMsg.includes("contacto")) {
-      return "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. También puedes hacer clic en el botón 'Hablar con un Experto por WhatsApp' debajo del chat.";
+      return "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. También puedes hacer clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha.";
     } 
 
     // 5. Respuesta por defecto si nada de lo anterior se activa y el bot sugiere WhatsApp
     if (userMsg.length > 0) {
-      return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave. Si necesitas ayuda más específica, te sugiero hacer clic en "Hablar con un Experto por WhatsApp".`;
+      return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave. Si necesitas ayuda más específica, te sugiero hacer clic en el botón 'Hablar con un Experto por WhatsApp' flotante.`;
     }
     return "¿Podrías repetir eso? Para una demo más avanzada, selecciona las funcionalidades y usa las sugerencias.";
   };
@@ -462,7 +462,7 @@ const App = () => {
                 <a className="nav-link" href="#features-section">Características</a>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#services-section">Nuestros Servicios</a> {/* Nuevo enlace */}
+                <a className="nav-link" href="#services-section">Nuestros Servicios</a> {/* Este es el enlace corregido */}
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#plans-section">Planes</a>
@@ -841,16 +841,16 @@ const App = () => {
               <button type="submit" className="btn btn-custom">Enviar</button>
             </form>
           </div>
-
-          {/* Botón para contactar por WhatsApp (integración futura) */}
-          <a href="https://wa.me/TU_NUMERO_DE_WHATSAPP?text=Hola%2C%20estoy%20interesado%20en%20sus%20agentes%20inteligentes." 
-             target="_blank" 
-             rel="noopener noreferrer" 
-             className="btn btn-success btn-lg mt-4">
-            <FontAwesomeIcon icon={faWhatsapp} className="me-2" /> Hablar con un Experto por WhatsApp
-          </a>
         </div>
       </section>
+
+      {/* Botón flotante para contactar por WhatsApp (integración futura) */}
+      <a href="https://wa.me/TU_NUMERO_DE_WHATSAPP?text=Hola%2C%20estoy%20interesado%20en%20sus%20agentes%20inteligentes." 
+         target="_blank" 
+         rel="noopener noreferrer" 
+         className="whatsapp-float-btn">
+        <FontAwesomeIcon icon={faWhatsapp} className="whatsapp-icon" />
+      </a>
 
       {/* Testimonials Section - Sección de testimonios de clientes */}
       <section id="testimonials-section" className="py-5">
