@@ -262,6 +262,9 @@ body {
     color: var(--primary-color);
     background-color: transparent;
     transition: all 0.2s ease;
+    display: flex; /* Para alinear ícono y texto */
+    align-items: center; /* Centrar verticalmente */
+    gap: 0.5rem; /* Espacio entre ícono y texto */
 }
 
 .suggestion-button:hover {
@@ -389,6 +392,12 @@ body {
     font-size: 2rem;
     bottom: 15px;
     right: 15px;
+  }
+  /* Ajustar botones de sugerencia en móvil para que no se vean demasiado grandes */
+  .suggestion-button {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      gap: 0.3rem; /* Menor espacio entre ícono y texto en móvil */
   }
 }
 

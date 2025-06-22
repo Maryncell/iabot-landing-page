@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'; // Importa useRef
 import './style.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Íconos sólidos y de marcas
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn } from '@fortawesome/free-solid-svg-icons'; 
+// Íconos sólidos y de marcas (Añadidos nuevos para los tipos de negocio)
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn, faEnvelope, faPhone, faBookOpen, faGraduationCap, faPaintBrush, faLaptopCode, faStore, faChalkboardTeacher, faUserTie, faBuilding } from '@fortawesome/free-solid-svg-icons'; 
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'; // Importación correcta para faWhatsapp
+
+// Función auxiliar para normalizar el texto de entrada del usuario
+const normalizeInput = (text) => {
+  return text
+    .toLowerCase() // Convertir a minúsculas
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Eliminar acentos
+    .replace(/\//g, '') // Eliminar barras (para "Ventas/Ecommerce")
+    .replace(/\s+/g, ' ') // Reemplazar múltiples espacios con uno solo
+    .trim(); // Eliminar espacios al inicio y final
+};
 
 // Importa y carga Stripe.js
 const loadStripeScript = () => {
@@ -28,7 +38,6 @@ const App = () => {
     message: ''
   });
 
-  // NUEVOS ESTADOS PARA EL FORMULARIO DE PAGO DIRECTO
   const [directPaymentName, setDirectPaymentName] = useState('');
   const [directPaymentEmail, setDirectPaymentEmail] = useState('');
 
@@ -38,7 +47,8 @@ const App = () => {
 
   const [loadingPlanes, setLoadingPlanes] = useState(true);
   const [errorPlanes, setErrorPlanes] = useState(null);
-  const [loadingFeatures, setLoadingFeatures] = useState(true);
+  // ESTA ES LA LÍNEA CRÍTICA CORREGIDA:
+  const [loadingFeatures, setLoadingFeatures] = useState(true); 
   const [errorFeatures, setErrorFeatures] = useState(null);
   const [stripePromise, setStripePromise] = useState(null); 
 
@@ -50,16 +60,20 @@ const App = () => {
     humanAgent: false,
     leadQualification: false,
     faqResponder: false, 
-    dataCollection: false, 
-    productRecommendation: false, 
+    productRecommendation: false, // Este ahora maneja el árbol de decisión de planes
   });
-  const [demoContext, setDemoContext] = useState(null); 
+  // demoContext ahora es un objeto para almacenar múltiples estados dentro del flujo
+  const [demoContext, setDemoContext] = useState({
+    flow: null, // 'reco_plan', 'human_agent_transfer', 'faq'
+    step: null, // paso dentro del flujo
+    data: {} // para almacenar datos temporales como el tipo de negocio, nombre, email, etc.
+  }); 
 
   // Referencia para el scroll a la sección de pago
   const directPaymentSectionRef = useRef(null);
 
   // CLAVE PUBLICABLE DE STRIPE (¡MODO DE PRUEBA!)
-  const STRIPE_PUBLIC_KEY = 'pk_test_51RcVgRCMnk8vxlKvTECJwdsLCz2PlvqjWJGdem4i9odVOFsy8wxSN618xqAq3nKvmw8UWsPM3AyvqI5s1y1ybnjq006pPAgkOh'; 
+  const STRIPE_PUBLIC_KEY = 'pk_test_TU_CLAVE_PUBLICABLE_GENERADA_POR_STRIPE'; 
 
   // Cargar Stripe.js cuando el componente se monta
   useEffect(() => {
@@ -81,7 +95,6 @@ const App = () => {
         if (data.length > 0) {
           // Inicializa el plan en el formulario de contacto y en el pago directo
           setFormData(prev => ({ ...prev, plan: data[0].nombre }));
-          // directPaymentName and directPaymentEmail are kept empty initially
         }
       } catch (error) {
         console.error("Error al obtener los planes:", error);
@@ -275,6 +288,7 @@ const App = () => {
     setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
     setCurrentMessage(''); 
 
+    // Simular la respuesta del bot después de un breve retraso
     setTimeout(() => {
       const botMsg = getBotResponse(userMsg);
       setChatHistory(prev => [...prev, { sender: 'bot', text: botMsg }]);
@@ -289,101 +303,267 @@ const App = () => {
       [featureName]: !prev[featureName]
     }));
     setChatHistory([]); // Reinicia el chat al cambiar las funciones
-    setDemoContext(null); // Reinicia cualquier contexto de conversación
+    setDemoContext({ flow: null, step: null, data: {} }); // Reinicia cualquier contexto de conversación
   };
 
-  // Función principal para simular la respuesta del bot, ahora más compleja
+  // Función principal para simular la respuesta del bot, ahora más compleja y con árbol de decisión
   const getBotResponse = (userMsg) => {
-    const lowerMsg = userMsg.toLowerCase().trim();
+    // Normalizar la entrada del usuario al principio
+    const normalizedUserMsg = normalizeInput(userMsg); 
+    let botResponse = "";
 
-    // 1. Manejar contexto de conversación (flujos multi-turno)
-    if (demoContext === 'data_collection_step1') {
-        setDemoContext('data_collection_step2');
-        return `¡Gracias, ${userMsg}! Ahora, por favor, ingresa tu email para que podamos enviarte más información.`;
-    }
-    if (demoContext === 'data_collection_step2') {
-        // Validación simple de email. En un bot real sería más robusto.
-        if (lowerMsg.includes("@") && lowerMsg.includes(".")) {
-            setDemoContext(null); // Finaliza el contexto de recopilación
-            return `¡Excelente, recibimos tu email ${userMsg}! Un representante se pondrá en contacto contigo pronto. Esto demuestra nuestra capacidad de recopilar información de forma conversacional.`;
-        } else {
-            return `Ese no parece ser un email válido. Por favor, ingresa un email válido.`;
+    // Lógica para INICIAR o REINICIAR el flujo de Recomendación de Plan
+    // Esta es la más alta prioridad para las frases de inicio de este flujo.
+    if (selectedDemoFeatures.productRecommendation &&
+        (normalizedUserMsg.includes("recomendar plan") || normalizedUserMsg.includes("que plan me conviene") || normalizedUserMsg.includes("ayuda a elegir") || normalizedUserMsg.includes("que bot") || normalizedUserMsg.includes("solucion ideal"))) {
+        
+        // Si el flujo ya está activo y es el mismo, o si es un inicio limpio, lo reiniciamos al primer paso.
+        if (demoContext.flow !== 'reco_plan' || demoContext.step !== 'ask_business_type') {
+            setDemoContext({ flow: 'reco_plan', step: 'ask_business_type', data: {} });
+            return "¡Excelente! Para recomendarte la solución ideal y el plan perfecto, ¿podrías decirme a qué tipo de negocio o sector pertenece tu empresa? Por ejemplo: Servicios, Ventas/Ecommerce, Educación, Freelance/Profesional Independiente, u Otro.";
         }
-    }
-    if (demoContext === 'product_reco_step1') {
-        setDemoContext('product_reco_step2');
-        return `Interesante. ¿Qué es lo más importante para ti en una solución de chatbot: el ${userMsg} o el presupuesto?`;
-    }
-    if (demoContext === 'product_reco_step2') {
-        setDemoContext(null); // Finaliza el contexto de recomendación
-        if (lowerMsg.includes("presupuesto") || lowerMsg.includes("costo")) {
-            return `Si tu prioridad es el presupuesto, te recomendaría nuestro plan "Básico", que ofrece una excelente relación calidad-precio para empezar.`;
-        } else if (lowerMsg.includes("funcionalidad") || lowerMsg.includes("características")) {
-            return `Si tu prioridad es la funcionalidad, te sugeriría explorar nuestro plan "Premium", que ofrece todas las funcionalidades avanzadas para una experiencia completa.`;
-        } else {
-            return `Entendido. Basado en tu interés en ${userMsg}, nuestros planes Avanzado o Premium podrían ser ideales. Puedes ver sus detalles en la sección "Planes".`;
-        }
+        // Si ya estamos en el primer paso y el usuario repite la frase de inicio, simplemente confirmamos.
+        return "Ya estamos en el proceso de recomendación de plan. Por favor, selecciona el tipo de negocio o escríbelo.";
     }
 
 
-    // 2. Manejar funciones de demo activadas (palabras clave específicas)
-    // PRIORIDAD: Respuestas específicas de funcionalidades de demo si están activas
-    if (selectedDemoFeatures.whatsapp && (lowerMsg.includes("whatsapp") || lowerMsg.includes("multicanal") || lowerMsg.includes("telegram"))) {
+    // Lógica para CONTINUAR flujos activos (solo si hay un flujo activo)
+    if (demoContext.flow === 'reco_plan') {
+      switch (demoContext.step) {
+        case 'ask_business_type':
+          const businessType = normalizedUserMsg; // Usar la entrada normalizada
+          // Validar y almacenar el tipo de negocio
+          if (['servicios', 'ventas', 'ecommerce', 'educacion', 'freelance', 'profesional independiente'].includes(businessType)) {
+            setDemoContext(prev => ({ ...prev, step: 'ask_priority', data: { ...prev.data, businessType: businessType } }));
+            let priorityQuestion = "";
+            if (['servicios', 'freelance', 'profesional independiente'].includes(businessType)) {
+              priorityQuestion = "¿Cuál es tu prioridad principal: 'Optimizar agenda y reservas', 'Mejorar atención 24/7' o 'Captar más clientes'?";
+            } else if (businessType === 'ventas' || businessType === 'ecommerce') {
+              priorityQuestion = "¿Qué te interesa más: 'Mostrar catálogo de productos', 'Gestionar pedidos y envíos' o 'Generar ofertas y promociones'?";
+            } else if (businessType === 'educacion') {
+              priorityQuestion = "¿Qué necesidad te gustaría cubrir: 'Información sobre cursos', 'Proceso de matrícula' o 'Soporte a estudiantes 24/7'?";
+            }
+            return `¡Excelente! Para tu negocio de ${userMsg}, ${priorityQuestion}`; // userMsg para mostrar la versión original
+          } else if (businessType === 'otro') { 
+            setDemoContext(prev => ({ ...prev, step: 'get_name_and_email_for_action', data: { ...prev.data, businessType: businessType, requestedAction: 'direct_contact_other' } }));
+            return "Comprendo. ¡Nuestros bots son muy adaptables! Para entender mejor tu caso específico, ¿podrías dejarnos tu nombre y email para una consulta personalizada?";
+          } else {
+             return "No pude identificar ese tipo de negocio. Por favor, selecciona uno de los sugeridos (Servicios, Ventas/Ecommerce, Educación, Freelance/Profesional Independiente, Otro) o descríbelo brevemente.";
+          }
+
+        case 'ask_priority':
+          const priority = normalizedUserMsg; // Usar la entrada normalizada
+          const type = demoContext.data.businessType;
+          let nextActionPrompt = "";
+          let nextStepForAction = ''; 
+
+          if (type === 'servicios' || type === 'freelance' || type === 'profesional independiente') {
+              if (priority.includes('optimizar agenda') || priority.includes('agenda') || priority.includes('reservas')) {
+                  nextActionPrompt = "Nuestro bot puede gestionar citas automáticamente y enviar recordatorios. ¿Te gustaría 'Agendar una demo gratuita' de 15 minutos o 'Recibir más información por email'?";
+                  nextStepForAction = 'reco_action_service_agenda';
+              } else if (priority.includes('mejorar atencion') || priority.includes('atencion') || priority.includes('24/7')) {
+                  nextActionPrompt = "Un agente inteligente puede mejorar drásticamente la atención al cliente. Para explorar cómo, ¿podrías 'Dejar tu contacto' para una propuesta personalizada?";
+                  nextStepForAction = 'get_name_and_email_for_action'; 
+              } else if (priority.includes('captar clientes') || priority.includes('captar')) {
+                  nextActionPrompt = "Podemos ayudarte a generar más leads. Para mostrarte estrategias, ¿podrías 'Dejar tu contacto' para una consulta?";
+                  nextStepForAction = 'get_name_and_email_for_action'; 
+              } else {
+                  nextActionPrompt = "No pude identificar tu prioridad. Para que un experto te asesore, ¿podrías 'Dejar tu contacto' para una propuesta personalizada?";
+                  nextStepForAction = 'get_name_and_email_for_action';
+              }
+          } else if (type === 'ventas' || type === 'ecommerce') {
+              if (priority.includes('mostrar catalogo') || priority.includes('catalogo') || priority.includes('productos')) {
+                  nextActionPrompt = "Un bot puede presentar tu catálogo de forma interactiva en WhatsApp. ¿Te gustaría que te 'Enviemos un ejemplo de catálogo' o 'Ver nuestros planes' que incluyen esta función?";
+                  nextStepForAction = 'reco_action_sales_catalog';
+              } else if (priority.includes('gestionar pedidos') || priority.includes('pedidos') || priority.includes('envios')) {
+                  nextActionPrompt = "Gestionar pedidos automáticamente es posible. Para más detalles, ¿podrías 'Dejar tu contacto' para una demo personalizada?";
+                  nextStepForAction = 'get_name_and_email_for_action';
+              } else if (priority.includes('generar ofertas') || priority.includes('ofertas') || priority.includes('promociones')) {
+                  nextActionPrompt = "Podemos automatizar el envío de ofertas personalizadas. ¿Te gustaría 'Recibir un ejemplo de oferta' o 'Agendar una demo'?";
+                  nextStepForAction = 'get_name_and_email_for_action'; 
+              } else {
+                  nextActionPrompt = "No pude identificar tu prioridad. Para que un experto te asesore, ¿podrías 'Dejar tu contacto' para una propuesta personalizada?";
+                  nextStepForAction = 'get_name_and_email_for_action';
+              }
+          } else if (type === 'educacion') {
+              if (priority.includes('informacion sobre cursos') || priority.includes('cursos') || priority.includes('programas') || priority.includes('informacion')) {
+                  nextActionPrompt = "El bot puede responder todas las preguntas sobre tus cursos. ¿Te gustaría 'Ver un demo educativo' o 'Recibir un folleto digital por email'?";
+                  nextStepForAction = 'reco_action_edu_courses';
+              } else if (priority.includes('proceso de matricula') || priority.includes('matricula') || priority.includes('admisiones')) {
+                  nextActionPrompt = "Optimizar el proceso de matrícula es clave. Para más detalles, ¿podrías 'Dejar tu contacto' para una consulta?";
+                  nextStepForAction = 'get_name_and_email_for_action';
+              } else if (priority.includes('soporte a estudiantes') || priority.includes('soporte') || priority.includes('estudiantes')) {
+                  nextActionPrompt = "Podemos mejorar el soporte 24/7 a tus estudiantes. Para explorar cómo, ¿podrías 'Dejar tu contacto' para una propuesta?";
+                  nextStepForAction = 'get_name_and_email_for_action';
+              } else {
+                  nextActionPrompt = "No pude identificar tu prioridad. Para que un experto te asesore, ¿podrías 'Dejar tu contacto' para una propuesta personalizada?";
+                  nextStepForAction = 'get_name_and_email_for_action';
+              }
+          } else { 
+              nextActionPrompt = "No pude identificar tu prioridad. Para que un experto te asesore, ¿podrías 'Dejar tu contacto' para una propuesta personalizada?";
+              nextStepForAction = 'get_name_and_email_for_action';
+          }
+          setDemoContext(prev => ({ ...prev, step: nextStepForAction, data: { ...prev.data, priority: priority } }));
+          return nextActionPrompt;
+
+        case 'reco_action_service_agenda': // Para Servicios -> Agenda/Reservas (Acciones)
+          if (normalizedUserMsg.includes('agendar demo gratuita') || normalizedUserMsg.includes('agendar demo')) {
+            setDemoContext(prev => ({ ...prev, step: 'get_name_and_email_for_action', data: { ...prev.data, requestedAction: 'demo_agenda' } }));
+            return "¡Excelente! Para agendar tu demo, por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).";
+          } else if (normalizedUserMsg.includes('recibir mas informacion por email') || normalizedUserMsg.includes('recibir info')) {
+            setDemoContext(prev => ({ ...prev, step: 'get_name_and_email_for_action', data: { ...prev.data, requestedAction: 'info_email_agenda' } }));
+            return "¡Claro! Para enviarte la información, por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).";
+          }
+          return "No entendí esa opción. Por favor, elige 'Agendar demo gratuita' o 'Recibir más información por email'.";
+
+        case 'reco_action_sales_catalog': // Para Ventas -> Catálogo (Acciones)
+            if (normalizedUserMsg.includes('enviemos un ejemplo de catalogo') || normalizedUserMsg.includes('enviar ejemplo')) {
+                setDemoContext(prev => ({ ...prev, step: 'get_name_and_email_for_action', data: { ...prev.data, requestedAction: 'example_catalog' } }));
+                return "¡Claro! Para enviarte un ejemplo del catálogo conversacional, por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).";
+            } else if (normalizedUserMsg.includes('ver nuestros planes') || normalizedUserMsg.includes('ver planes')) {
+                setDemoContext({ flow: null, step: null, data: {} }); // Finaliza el flujo
+                return "Claro, puedes ver todos nuestros planes en la sección 'Nuestros Planes' de esta página. ¡Haz clic en el botón 'Planes' en el menú de navegación!";
+            }
+            return "No entendí esa opción. Por favor, elige 'Enviemos un ejemplo de catálogo' o 'Ver nuestros planes'.";
+
+        case 'reco_action_edu_courses': // Para Educación -> Cursos (Acciones)
+            if (normalizedUserMsg.includes('ver un demo educativo') || normalizedUserMsg.includes('ver demo')) {
+                setDemoContext(prev => ({ ...prev, step: 'get_name_and_email_for_action', data: { ...prev.data, requestedAction: 'edu_demo' } }));
+                return "¡Genial! Para acceder al demo educativo, por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).";
+            } else if (normalizedUserMsg.includes('recibir un folleto digital por email') || normalizedUserMsg.includes('recibir folleto')) {
+                setDemoContext(prev => ({ ...prev, step: 'get_name_and_email_for_action', data: { ...prev.data, requestedAction: 'edu_brochure' } }));
+                return "¡Perfecto! Para enviarte el folleto digital, por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).";
+            }
+            return "No entendí esa opción. Por favor, elige 'Ver un demo educativo' o 'Recibir un folleto digital por email'.";
+
+        case 'get_name_and_email_for_action': // Paso unificado para nombre y email
+            // Regex más permisiva: busca un email y considera el resto como nombre.
+            // Permite formatos como "nombre, email", "nombre - email", "email nombre", o "nombre y mi email es email"
+            const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
+            const emailMatch = userMsg.match(emailRegex);
+            
+            let name = "Cliente";
+            let email = "";
+
+            if (emailMatch) {
+                email = emailMatch[1].trim();
+                let remainingText = userMsg.replace(emailMatch[0], '').trim();
+
+                // Intentar extraer el nombre de lo que queda, buscando patrones comunes
+                const nameKeywords = ["mi nombre es", "soy", "me llamo"];
+                let foundName = false;
+                for (const keyword of nameKeywords) {
+                    const keywordIndex = normalizeInput(remainingText).indexOf(normalizeInput(keyword));
+                    if (keywordIndex !== -1) {
+                        name = remainingText.substring(keywordIndex + keyword.length).trim();
+                        foundName = true;
+                        break;
+                    }
+                }
+                
+                if (!foundName && remainingText.length > 0) {
+                    // Si no se encontró un patrón explícito, toma la parte restante como nombre (hasta 20 caracteres para evitar spam/errores)
+                    name = remainingText.split(/[\s,.-]/).filter(Boolean)[0] || remainingText.substring(0, 20).trim();
+                    if (name.toLowerCase() === 'y') name = "Cliente"; // Evitar "y" como nombre
+                } else if (!foundName && userMsg.length > 0) {
+                    // Fallback si no se encontró nombre explícito, y el mensaje original es largo, intenta usar la primera palabra como nombre
+                    name = userMsg.split(/[\s,.-]/).filter(Boolean)[0] || "Cliente";
+                }
+
+                if (name.length > 30) name = name.substring(0, 30) + "..."; // Limitar longitud del nombre
+                if (!name || name.toLowerCase().includes('email')) name = "Cliente"; // Si el nombre aún es inválido o es parte del email
+            }
+
+            if (email.includes("@") && email.includes(".")) {
+                setDemoContext({ flow: null, step: null, data: {} }); // Finaliza el flujo
+
+                let finalMessage = "";
+                const action = demoContext.data.requestedAction;
+                switch(action) {
+                    case 'demo_agenda':
+                        finalMessage = `¡Demo agendada para ${name}! Recibirás los detalles en ${email}. Esto demuestra nuestra capacidad de agendar y recopilar datos de forma efectiva.`;
+                        break;
+                    case 'info_email_agenda':
+                        finalMessage = `¡Información enviada a ${email}! Revisa tu bandeja de entrada. Esto demuestra nuestra capacidad de enviar contenido personalizado automáticamente.`;
+                        break;
+                    case 'example_catalog':
+                        finalMessage = `¡Ejemplo de catálogo enviado a ${email}! Revisa tu bandeja de entrada. Esto demuestra cómo presentamos productos de forma interactiva.`;
+                        break;
+                    case 'edu_demo':
+                        finalMessage = `¡Demo educativa lista para ${name}! Detalles enviados a ${email}. Así ayudamos a instituciones educativas a atraer interesados.`;
+                        break;
+                    case 'edu_brochure':
+                        finalMessage = `¡Folleto digital enviado a ${email}! Esto demuestra la distribución automática de materiales y contenido valioso.`;
+                        break;
+                    case 'direct_contact':
+                    case 'direct_contact_other': 
+                        finalMessage = `¡Gracias, ${name}! Hemos recibido tu información y un experto te contactará pronto en ${email}. Esto demuestra nuestra capacidad de calificar leads y gestionar contactos de manera eficiente.`;
+                        break;
+                    default:
+                        finalMessage = `¡Gracias, ${name}! Tu solicitud ha sido procesada y te contactaremos en ${email}.`;
+                }
+                return finalMessage;
+            } else {
+                return `Ese no parece un formato de nombre y email válido. Por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).`;
+            }
+        
+        default:
+          // Si demoContext.flow es 'reco_plan' pero step no es reconocido, reinicia el flujo.
+          setDemoContext({ flow: null, step: null, data: {} }); 
+          return "Lo siento, hubo un problema con el flujo de la conversación y lo hemos reiniciado. ¿En qué puedo ayudarte ahora? Si quieres intentar de nuevo, puedes decir 'Recomiéndame un plan'.";
+      }
+    }
+
+    // --- Lógica para otras funcionalidades activas o respuestas generales (si no hay flujo activo) ---
+    // PRIORIDAD: Respuestas de funcionalidades de demo específicas si están activas (si flow es null)
+    if (selectedDemoFeatures.whatsapp && (normalizedUserMsg.includes("whatsapp") || normalizedUserMsg.includes("multicanal") || normalizedUserMsg.includes("telegram"))) {
         return "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están. Si deseas explorar más, haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha.";
     }
 
-    if (selectedDemoFeatures.humanAgent && (lowerMsg.includes("agente") || lowerMsg.includes("humano") || lowerMsg.includes("hablar con alguien"))) {
+    if (selectedDemoFeatures.humanAgent && (normalizedUserMsg.includes("agente") || normalizedUserMsg.includes("humano") || normalizedUserMsg.includes("hablar con alguien"))) {
         return "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'. Haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha para continuar.";
     }
 
     if (selectedDemoFeatures.faqResponder) {
-        if (lowerMsg.includes("horario") || lowerMsg.includes("abierto")) {
+        if (normalizedUserMsg.includes("horario") || normalizedUserMsg.includes("abierto")) {
             return "Nuestras oficinas están abiertas de lunes a viernes, de 9 AM a 6 PM (hora local de Guernica, Argentina). ¡Siempre listos para atenderte!";
-        } else if (lowerMsg.includes("devoluciones") || lowerMsg.includes("reembolso")) {
+        } else if (normalizedUserMsg.includes("devoluciones") || normalizedUserMsg.includes("reembolso")) {
             return "Nuestra política de devoluciones permite solicitar un reembolso completo dentro de los 30 días posteriores a la compra, bajo ciertas condiciones. ¿Necesitas más detalles?";
-        } else if (lowerMsg.includes("soporte") || lowerMsg.includes("ayuda")) {
+        } else if (normalizedUserMsg.includes("soporte") || normalizedUserMsg.includes("ayuda")) {
             return "Ofrecemos soporte 24/7 para nuestros planes Avanzado y Premium. Para el plan Básico, el soporte es por email en horario de oficina.";
         }
     }
 
     if (selectedDemoFeatures.leadQualification) {
-        if (lowerMsg.includes("industria") || lowerMsg.includes("negocio")) {
+        if (normalizedUserMsg.includes("industria") || normalizedUserMsg.includes("negocio")) {
             return "¡Claro! Para ofrecerte el mejor servicio, ¿podrías indicarme a qué industria pertenece tu negocio (ej. retail, salud, servicios, manufactura)?";
-        } else if (lowerMsg.includes("retail") || lowerMsg.includes("comercio") || lowerMsg.includes("ventas")) {
+        } else if (normalizedUserMsg.includes("retail") || normalizedUserMsg.includes("comercio") || normalizedUserMsg.includes("ventas")) {
             return "Entendido, la industria minorista es clave para la automatización. ¿Te gustaría que el bot gestionara consultas de productos o el estado de pedidos?";
-        } else if (lowerMsg.includes("salud") || lowerMsg.includes("clinica") || lowerMsg.includes("hospital")) {
+        } else if (normalizedUserMsg.includes("salud") || normalizedUserMsg.includes("clinica") || normalizedUserMsg.includes("hospital")) {
             return "Perfecto, en salud la confidencialidad es vital. Nuestro bot puede agendar citas y responder FAQs de forma segura. ¿Qué te interesa más?";
-        } else if (lowerMsg.includes("servicios") || lowerMsg.includes("consultoria")) {
+        } else if (normalizedUserMsg.includes("servicios") || normalizedUserMsg.includes("consultoria")) {
             return "Excelente, los bots pueden optimizar la atención al cliente en servicios. ¿Te gustaría automatizar la reserva de citas o el soporte inicial?";
         }
     }
 
-
-    // 3. Iniciar flujos de demo si se activan y el usuario usa una frase clave para iniciar
-    if (selectedDemoFeatures.dataCollection && (lowerMsg.includes("recopilar datos") || lowerMsg.includes("captar datos") || lowerMsg.includes("iniciar registro")) && demoContext === null) {
-        setDemoContext('data_collection_step1'); // Inicia el flujo de recopilación de datos
-        return "¡Claro! Con gusto te demostraré cómo nuestro bot puede recopilar información. Para empezar, ¿cuál es tu nombre?";
-    }
-
-    if (selectedDemoFeatures.productRecommendation && (lowerMsg.includes("recomendar plan") || lowerMsg.includes("que plan") || lowerMsg.includes("ayuda a elegir")) && demoContext === null) {
-        setDemoContext('product_reco_step1'); // Inicia el flujo de recomendación de producto
-        return "¡Excelente! Para recomendarte el plan ideal, ¿podrías decirme cuál es el principal desafío de tu negocio en este momento? (ej. automatización, soporte 24/7, generación de leads)";
-    }
-
-    // 4. Respuestas predefinidas generales (if no demo feature or context is relevant)
-    if (lowerMsg.includes("hola")) {
+    // Respuestas predefinidas generales (si ninguna función de demo o flujo es relevante)
+    if (normalizedUserMsg.includes("hola")) {
       return "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy? Para explorar nuestras capacidades, puedes activar las funciones de demo en la parte superior del chat.";
-    } else if (lowerMsg.includes("precio") || lowerMsg.includes("costo") || lowerMsg.includes("planes")) {
+    } else if (normalizedUserMsg.includes("precio") || normalizedUserMsg.includes("costo") || normalizedUserMsg.includes("planes")) {
       return "Puedes ver nuestros planes y funciones adicionales en las secciones 'Planes' y 'Funciones Adicionales' de esta página. ¡Haz clic para explorar! Si tienes preguntas específicas, ¡prueba activar las funciones de demo!";
-    } else if (lowerMsg.includes("gracias")) {
+    } else if (normalizedUserMsg.includes("gracias")) {
       return "¡De nada! Estoy aquí para ayudarte a transformar tu negocio.";
-    } else if (lowerMsg.includes("contacto")) {
+    } else if (normalizedUserMsg.includes("contacto")) {
       return "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. También puedes hacer clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha.";
     } 
 
-    // 5. Respuesta por defecto si nada de lo anterior se activa y el bot sugiere WhatsApp
+    // Mensaje de fallback por defecto si nada de lo anterior coincide
     if (userMsg.length > 0) {
-      return `Has dicho: "${userMsg}". Este es un demo básico. Para experimentar más, activa las funcionalidades en la parte superior del chat y prueba los botones de sugerencia o frases clave. Si necesitas ayuda más específica, te sugiero hacer clic en el botón 'Hablar con un Experto por WhatsApp' flotante.`;
+        // Si la funcionalidad de recomendación está activa y el flujo no ha iniciado, guiar al usuario
+        if (selectedDemoFeatures.productRecommendation && demoContext.flow !== 'reco_plan') {
+            return `Has dicho: "${userMsg}". Para iniciar la recomendación de plan, por favor, haz clic en el botón "Recomiéndame un plan" o escribe "qué plan me conviene".`;
+        }
+      return `Has dicho: "${userMsg}". Este es un demo interactivo. Para experimentar más, te sugiero activar las funcionalidades en la parte superior del chat y probar los botones de sugerencia o frases clave. Si necesitas ayuda más específica, haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante.`;
     }
     return "¿Podrías repetir eso? Para una demo más avanzada, selecciona las funcionalidades y usa las sugerencias.";
   };
@@ -393,23 +573,60 @@ const App = () => {
     let suggestions = [];
 
     // Sugerencias basadas en el contexto activo (tienen prioridad)
-    if (demoContext === 'data_collection_step1') {
-        suggestions.push({ text: "Mi nombre es [Tu Nombre]", key: "Mi nombre es Juan" });
-    } else if (demoContext === 'data_collection_step2') {
-        suggestions.push({ text: "miemail@ejemplo.com", key: "miemail@ejemplo.com" });
-    } else if (demoContext === 'product_reco_step1') {
-        suggestions.push({ text: "Automatización", key: "automatizacion" });
-        suggestions.push({ text: "Soporte 24/7", key: "soporte 24/7" });
-        suggestions.push({ text: "Generación de leads", key: "generacion de leads" });
-    } else if (demoContext === 'product_reco_step2') {
-        suggestions.push({ text: "El presupuesto", key: "presupuesto" });
-        suggestions.push({ text: "La funcionalidad", key: "funcionalidad" });
-    } else { // Sugerencias si no hay contexto activo, basadas en funciones de demo
-        // Sugerencias generales siempre disponibles
+    if (demoContext.flow === 'reco_plan') {
+      switch (demoContext.step) {
+        case 'ask_business_type':
+          suggestions.push({ text: "Servicios", key: "servicios", icon: faUserTie });
+          suggestions.push({ text: "Ventas / Ecommerce", key: "ventas", icon: faShoppingCart });
+          suggestions.push({ text: "Educación", key: "educacion", icon: faGraduationCap });
+          suggestions.push({ text: "Freelance / Profesional Independiente", key: "freelance", icon: faLaptopCode }); 
+          suggestions.push({ text: "Otro", key: "otro", icon: faBuilding }); // Use faBuilding for general business/other
+          break;
+        case 'ask_priority':
+          const type = demoContext.data.businessType;
+          if (type === 'servicios' || type === 'freelance' || type === 'profesional independiente') {
+            suggestions.push({ text: "Optimizar agenda y reservas", key: "optimizar agenda" });
+            suggestions.push({ text: "Mejorar atención 24/7", key: "mejorar atencion" });
+            suggestions.push({ text: "Captar más clientes", key: "captar clientes" });
+          } else if (type === 'ventas' || type === 'ecommerce') {
+            suggestions.push({ text: "Mostrar catálogo de productos", key: "mostrar catalogo" });
+            suggestions.push({ text: "Gestionar pedidos y envíos", key: "gestionar pedidos" });
+            suggestions.push({ text: "Generar ofertas y promociones", key: "generar ofertas" });
+          } else if (type === 'educacion') {
+            suggestions.push({ text: "Información sobre cursos", key: "informacion sobre cursos" }); // Clave completa para match preciso
+            suggestions.push({ text: "Proceso de matrícula", key: "proceso de matricula" });
+            suggestions.push({ text: "Soporte a estudiantes 24/7", key: "soporte a estudiantes" });
+          } else { // For "Otro" business type, directly ask for contact if no specific priority path is chosen
+             suggestions.push({ text: "Dejar mi contacto", key: "dejar mi contacto" });
+          }
+          break;
+        case 'reco_action_service_agenda':
+          suggestions.push({ text: "Agendar Demo Gratuita", key: "agendar demo gratuita" });
+          suggestions.push({ text: "Recibir más información por email", key: "recibir mas informacion por email" });
+          break;
+        case 'reco_action_sales_catalog':
+          suggestions.push({ text: "Enviemos un ejemplo de catálogo", key: "enviemos un ejemplo de catalogo" });
+          suggestions.push({ text: "Ver nuestros planes", key: "ver nuestros planes" });
+          break;
+        case 'reco_action_edu_courses':
+          suggestions.push({ text: "Ver un demo educativo", key: "ver un demo educativo" });
+          suggestions.push({ text: "Recibir un folleto digital por email", key: "recibir un folleto digital por email" });
+          break;
+        case 'get_name_and_email_for_action':
+          suggestions.push({ text: "Juan Pérez, juan@ejemplo.com", key: "ejemplo_contacto" }); // Ejemplo para guiar al usuario
+          break;
+        default:
+          break;
+      }
+    } else { // Sugerencias si no hay un flujo específico activo
         suggestions.push({ text: "Hola", key: "hola" });
         suggestions.push({ text: "¿Qué planes tienen?", key: "planes" });
         suggestions.push({ text: "Contacto", key: "contacto" });
         
+        // Si la función de recomendación de plan está activa, sugiere iniciarla
+        if (selectedDemoFeatures.productRecommendation) {
+            suggestions.push({ text: "Recomiéndame un plan", key: "recomendar plan" });
+        }
         if (selectedDemoFeatures.whatsapp) {
             suggestions.push({ text: "Demo WhatsApp", key: "whatsapp" });
         }
@@ -418,18 +635,9 @@ const App = () => {
         }
         if (selectedDemoFeatures.leadQualification) {
             suggestions.push({ text: "¿Cuál es mi industria?", key: "industria" });
-            suggestions.push({ text: "Mi negocio es de retail", key: "retail" });
         }
         if (selectedDemoFeatures.faqResponder) {
             suggestions.push({ text: "Horarios de atención", key: "horario" });
-            suggestions.push({ text: "Política de devoluciones", key: "devoluciones" });
-            suggestions.push({ text: "¿Necesito soporte?", key: "soporte" });
-        }
-        if (selectedDemoFeatures.dataCollection) {
-            suggestions.push({ text: "Recopilar mis datos", key: "recopilar datos" });
-        }
-        if (selectedDemoFeatures.productRecommendation) {
-            suggestions.push({ text: "Recomendarme un plan", key: "recomendar plan" });
         }
     }
     
@@ -462,7 +670,7 @@ const App = () => {
                 <a className="nav-link" href="#features-section">Características</a>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#services-section">Nuestros Servicios</a> {/* Este es el enlace corregido */}
+                <a className="nav-link" href="#services-section">Nuestros Servicios</a> 
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#plans-section">Planes</a>
@@ -774,16 +982,6 @@ const App = () => {
                   />
                   <label className="form-check-label" htmlFor="faqResponderSwitch">FAQs Inteligentes</label>
                 </div>
-                <div className="form-check form-switch"> 
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
-                    id="dataCollectionSwitch" 
-                    checked={selectedDemoFeatures.dataCollection} 
-                    onChange={() => handleDemoFeatureToggle('dataCollection')} 
-                  />
-                  <label className="form-check-label" htmlFor="dataCollectionSwitch">Recopilación de Datos</label>
-                </div>
                  <div className="form-check form-switch"> 
                   <input 
                     className="form-check-input" 
@@ -792,7 +990,7 @@ const App = () => {
                     checked={selectedDemoFeatures.productRecommendation} 
                     onChange={() => handleDemoFeatureToggle('productRecommendation')} 
                   />
-                  <label className="form-check-label" htmlFor="productRecommendationSwitch">Recomendación de Plan</label>
+                  <label className="form-check-label" htmlFor="productRecommendationSwitch">Recomendación de Plan (interactivo)</label>
                 </div>
               </div>
             </div>
@@ -820,9 +1018,11 @@ const App = () => {
                         className="btn btn-outline-light btn-sm suggestion-button" 
                         onClick={() => {
                             setCurrentMessage(suggestion.text);
+                            // Simular el envío del mensaje programáticamente
                             handleSendMessage({ preventDefault: () => {} }); 
                         }}
                     >
+                        {suggestion.icon && <FontAwesomeIcon icon={suggestion.icon} className="me-2" />} {/* Render icon if available */}
                         {suggestion.text}
                     </button>
                 ))}
