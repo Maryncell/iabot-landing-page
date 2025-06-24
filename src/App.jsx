@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'; // Importa useRef
 import './style.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // Íconos sólidos y de marcas (Añadidos nuevos para los tipos de negocio y acciones)
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn, faEnvelope, faPhone, faBookOpen, faGraduationCap, faPaintBrush, faLaptopCode, faStore, faChalkboardTeacher, faUserTie, faBuilding, faSpa, faTag, faClipboardList, faCookieBite, faDollarSign as faDollarSignSolid, faPlayCircle, faCalendarCheck, faSyncAlt, faEuroSign, faHandHoldingUsd, faSearch, faBriefcase, faChalkboard, faHeartbeat, faPalette, faFileAlt, faQuoteRight, faMapMarkerAlt, faClock, faWallet, faHandsHelping, faBoxes, faHandPointRight, faVideo, faCalendarDay, faUserClock, faCapsules, faLink, faTruck, faStethoscope } from '@fortawesome/free-solid-svg-icons'; 
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn, faEnvelope, faPhone, faBookOpen, faGraduationCap, faPaintBrush, faLaptopCode, faStore, faChalkboardTeacher, faUserTie, faBuilding, faSpa, faTag, faClipboardList, faCookieBite, faDollarSign as faDollarSignSolid, faPlayCircle, faCalendarCheck, faSyncAlt, faEuroSign, faHandHoldingUsd, faSearch, faBriefcase, faChalkboard, faHeartbeat, faPalette, faFileAlt, faQuoteRight, faMapMarkerAlt, faClock, faWallet, faHandsHelping, faBoxes, faHandPointRight, faVideo, faCalendarDay, faUserClock, faCapsules, faLink, faTruck, faStethoscope, faReply, faPaperPlane } from '@fortawesome/free-solid-svg-icons'; 
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'; // Importación correcta para faWhatsapp
 
 // Función auxiliar para normalizar el texto de entrada del usuario
@@ -55,11 +55,7 @@ const App = () => {
   const [chatHistory, setChatHistory] = useState([]); 
   const [currentMessage, setCurrentMessage] = useState(''); 
   const [selectedDemoFeatures, setSelectedDemoFeatures] = useState({ 
-    whatsapp: false,
-    humanAgent: false,
-    leadQualification: false,
-    faqResponder: false, 
-    // productRecommendation: false, // Este switch se usa para activar el flujo general de simulación
+    productRecommendation: false, // Este es ahora el ÚNICO switch de la demo principal
   });
   // demoContext ahora es un objeto para almacenar múltiples estados dentro del flujo
   const [demoContext, setDemoContext] = useState({
@@ -285,7 +281,7 @@ const App = () => {
   const resetDemo = () => {
     setChatHistory([]);
     setDemoContext({ active: false, flow: null, step: 'welcome', businessType: null, scenario: null, data: {} });
-    return "Simulación reiniciada. ¿En qué más puedo ayudarte o te gustaría iniciar otra demo de IA?";
+    return "Simulación reiniciada. Activa el switch 'Simulación de IA' para empezar otra demo.";
   };
 
   // Manejador para enviar mensajes en el chat del demo
@@ -308,7 +304,6 @@ const App = () => {
 
 
   // Manejador para alternar las funciones de demo y reiniciar el chat
-  // Ahora el switch productRecommendation activa/desactiva el flujo de simulación principal
   const handleDemoFeatureToggle = (featureName) => {
     setSelectedDemoFeatures(prev => {
         const newState = {
@@ -326,7 +321,7 @@ const App = () => {
                 setChatHistory(prev => [...prev, { sender: 'bot', text: "👋 ¡Hola! Soy IABOT, tu asistente virtual personalizado.\n\nEstoy diseñado para adaptarme a tu tipo de negocio y ayudarte a responder clientes automáticamente.\n\nAntes de comenzar, contame:\n¿A qué rubro pertenece tu negocio?" }]);
             } else {
                 // Si se desactivó, solo un mensaje informativo
-                setChatHistory(prev => [...prev, { sender: 'bot', text: "¡Demo de IA desactivada! Puedes explorar las otras funciones o decir 'hola' para una conversación general." }]);
+                setChatHistory(prev => [...prev, { sender: 'bot', text: "¡Demo de IA desactivada! Puedes explorar otras secciones de la página." }]);
             }
         }
         return newState;
@@ -338,12 +333,27 @@ const App = () => {
     const normalizedUserMsg = normalizeInput(userMsg); 
     let response = "";
     let newDemoContext = { ...currentDemoContext }; // Copia el contexto actual para modificarlo
-    let typingDelay = 1000; 
 
     // Lógica para reiniciar la simulación en cualquier momento (prioritaria)
     if (normalizedUserMsg.includes("reiniciar simulacion") || normalizedUserMsg.includes("reiniciar demo") || normalizedUserMsg.includes("reset")) {
         return { response: resetDemo(), newDemoContext: { active: false, flow: null, step: 'welcome', businessType: null, scenario: null, data: {} } };
     }
+    
+    // Lógica para volver a las opciones del rubro (este es el punto clave)
+    if (normalizedUserMsg.includes("volver a opciones del rubro") && newDemoContext.businessType) {
+        newDemoContext.step = 'select_scenario_for_business_type';
+        newDemoContext.scenario = null; // Limpiar el escenario específico
+        response = `¡De acuerdo! Volviendo a las opciones para tu negocio de **${newDemoContext.businessType.charAt(0).toUpperCase() + newDemoContext.businessType.slice(1)}**. ¿Qué te gustaría simular ahora?`;
+        return { response, newDemoContext };
+    }
+
+    // Lógica para ir al CTA final
+    if (normalizedUserMsg.includes("finalizar demo y contactar")) {
+        newDemoContext.step = 'final_call_to_action';
+        response = "¿Querés tener un asistente como este trabajando para vos?\n\nTe puedo ayudar a configurarlo según tu negocio.\n\nPara coordinar, por favor, déjanos tu **nombre** y **email** (ej. Juan Pérez, juan@ejemplo.com).";
+        return { response, newDemoContext };
+    }
+
 
     // Si la simulación de IA no está activa (el switch está off)
     if (!selectedDemoFeatures.productRecommendation || !newDemoContext.active) {
@@ -353,64 +363,37 @@ const App = () => {
             response = "👋 ¡Hola! Soy IABOT, tu asistente virtual personalizado.\n\nEstoy diseñado para adaptarse a tu tipo de negocio y ayudarte a responder clientes automáticamente.\n\nAntes de comenzar, contame:\n¿A qué rubro pertenece tu negocio?";
             return { response, newDemoContext };
         }
-        // Respuestas generales si no está en el flujo principal y el switch está off
-        if (selectedDemoFeatures.whatsapp && (normalizedUserMsg.includes("whatsapp") || normalizedUserMsg.includes("multicanal") || normalizedUserMsg.includes("telegram"))) {
-            return { response: "¡Absolutamente! Este bot puede integrarse fácilmente con WhatsApp y otros canales como Telegram, permitiéndote ofrecer soporte continuo donde tus clientes ya están. Si deseas explorar más, haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha.", newDemoContext };
-        }
-        if (selectedDemoFeatures.humanAgent && (normalizedUserMsg.includes("agente") || normalizedUserMsg.includes("humano") || normalizedUserMsg.includes("hablar con alguien"))) {
-            return { response: "Entendido. Un momento, por favor. Te estoy conectando con uno de nuestros agentes humanos especializados. Esto es posible con nuestra función de 'Transferencia a Agente Humano'. Haz clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha para continuar.", newDemoContext };
-        }
-        if (selectedDemoFeatures.faqResponder) {
-            if (normalizedUserMsg.includes("horario") || normalizedUserMsg.includes("abierto")) {
-                return { response: "Nuestras oficinas están abiertas de lunes a viernes, de 9 AM a 6 PM (hora local de Guernica, Argentina). ¡Siempre listos para atenderte!", newDemoContext };
-            } else if (normalizedUserMsg.includes("devoluciones") || normalizedUserMsg.includes("reembolso")) {
-                return { response: "Nuestra política de devoluciones permite solicitar un reembolso completo dentro de los 30 días posteriores a la compra, bajo ciertas condiciones. ¿Necesitas más detalles?", newDemoContext };
-            } else if (normalizedUserMsg.includes("soporte") || normalizedUserMsg.includes("ayuda")) {
-                return { response: "Ofrecemos soporte 24/7 para nuestros planes Avanzado y Premium. Para el plan Básico, el soporte es por email en horario de oficina.", newDemoContext };
-            }
-        }
-        if (selectedDemoFeatures.leadQualification) {
-            if (normalizedUserMsg.includes("industria") || normalizedUserMsg.includes("negocio")) {
-                return { response: "¡Claro! Para ofrecerte el mejor servicio, ¿podrías indicarme a qué industria pertenece tu negocio (ej. retail, salud, servicios, manufactura)?", newDemoContext };
-            } else if (normalizedUserMsg.includes("retail") || normalizedUserMsg.includes("comercio") || normalizedUserMsg.includes("ventas")) {
-                return { response: "Entendido, la industria minorista es clave para la automatización. ¿Te gustaría que el bot gestionara consultas de productos o el estado de pedidos?", newDemoContext };
-            } else if (normalizedUserMsg.includes("salud") || normalizedUserMsg.includes("clinica") || normalizedUserMsg.includes("hospital")) {
-                return { response: "Perfecto, en salud la confidencialidad es vital. Nuestro bot puede agendar citas y responder FAQs de forma segura. ¿Qué te interesa más?", newDemoContext };
-            } else if (normalizedUserMsg.includes("servicios") || normalizedUserMsg.includes("consultoria")) {
-                return { response: "Excelente, los bots pueden optimizar la atención al cliente en servicios. ¿Te gustaría automatizar la reserva de citas o el soporte inicial?", newDemoContext };
-            }
-        }
-        // Mensajes de fallback generales si la demo de IA no está activa
+        // Respuestas de fallback generales si la demo de IA no está activa
         if (normalizedUserMsg.includes("hola")) {
-          return { response: "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy? Para explorar nuestras capacidades, puedes activar las funciones de demo en la parte superior del chat, especialmente la 'Simulación de IA'.", newDemoContext };
+          return { response: "¡Hola! Soy IABOT, tu asistente virtual. ¿En qué puedo ayudarte hoy? Activa el switch 'Simulación de IA' para ver mi potencial.", newDemoContext };
         } else if (normalizedUserMsg.includes("precio") || normalizedUserMsg.includes("costo") || normalizedUserMsg.includes("planes")) {
-          return { response: "Puedes ver nuestros planes y funciones adicionales en las secciones 'Planes' y 'Funciones Adicionales' de esta página. ¡Haz clic para explorar! Si tienes preguntas específicas, ¡prueba activar la 'Simulación de IA'!", newDemoContext };
+          return { response: "Puedes ver nuestros planes y funciones adicionales en las secciones 'Planes' y 'Funciones Adicionales' de esta página. ¡Haz clic para explorar! Si quieres ver una simulación, ¡prueba activar la 'Simulación de IA'!", newDemoContext };
         } else if (normalizedUserMsg.includes("gracias")) {
           return { response: "¡De nada! Estoy aquí para ayudarte a transformar tu negocio.", newDemoContext };
         } else if (normalizedUserMsg.includes("contacto")) {
           return { response: "Si deseas una demo personalizada o tienes más preguntas, puedes contactarnos a través del formulario al final de la página. También puedes hacer clic en el botón 'Hablar con un Experto por WhatsApp' flotante en la esquina inferior derecha.", newDemoContext };
         } 
-        return { response: `Has dicho: "${userMsg}". Este es un demo interactivo. Para experimentar más, te sugiero activar las funcionalidades en la parte superior del chat, especialmente la 'Simulación de IA' para ver la simulación de IA.`, newDemoContext };
+        return { response: `Has dicho: "${userMsg}". Este es un demo interactivo. Para experimentar más, te sugiero activar el switch 'Simulación de IA' para ver mi potencial.`, newDemoContext };
     }
 
     // --- Flujo de la Demo de IA (cuando selectedDemoFeatures.productRecommendation está activo) ---
     switch (currentDemoContext.step) {
         case 'ask_business_type':
-            const validBusinessTypes = ["servicios", "ventas", "educacion", "salud", "freelance", "otro", "ventas / ecommerce"];
-            const cleanBusinessType = normalizedUserMsg.replace(" / ecommerce", ""); // Para manejar "ventas / ecommerce"
+            const validBusinessTypes = ["servicios", "ventas", "educacion", "salud", "freelance", "otro", "ventas / ecommerce", "ecommerce"]; // Añadido "ecommerce"
+            const cleanBusinessType = normalizedUserMsg.replace(" / ecommerce", "").replace("ecommerce", "ventas"); // Normaliza "ecommerce" a "ventas"
 
-            if (validBusinessTypes.includes(cleanBusinessType)) {
+            if (validBusinessTypes.includes(normalizedUserMsg)) { // Evaluar con la entrada original para el mensaje, pero usar clean para la lógica
                 newDemoContext.businessType = cleanBusinessType;
                 newDemoContext.step = 'select_scenario_for_business_type';
-                response = `¡Genial! Un negocio de **${userMsg}** puede beneficiarse enormemente de IABOT.`;
+                let businessDisplay = normalizedUserMsg === "ecommerce" ? "Ventas/Ecommerce" : userMsg; // Mostrar "Ventas/Ecommerce" si se escribe "ecommerce"
+                response = `¡Genial! Un negocio de **${businessDisplay}** puede beneficiarse enormemente de IABOT.`;
 
-                // Aquí definimos los escenarios por tipo de negocio, como en tu modelo
                 switch (newDemoContext.businessType) {
                     case 'servicios':
                         response += "\n\n¿Querés que simule una conversación sobre...?";
                         break;
                     case 'ventas':
-                        response += "\n\n¡Perfecto! Imaginá que te escribe un cliente preguntando por productos. Simulo una consulta automática:";
+                        response += "\n\n¡Perfecto! Imaginá que te escribe un cliente preguntando por productos. Simulo una consulta automática:\n\n*\"Hola, ¿tenés stock de este producto? ¿Cuánto cuesta? ¿Cómo es el envío?\"*";
                         break;
                     case 'educacion':
                         response += "\n\n¡Excelente! Este bot puede:\n- Informar sobre horarios\n- Pasar precios\n- Enviar links de inscripción\n- Responder dudas frecuentes.";
@@ -431,10 +414,10 @@ const App = () => {
             break;
 
         case 'select_scenario_for_business_type':
-            // El usuario seleccionó un escenario específico para el tipo de negocio
-            newDemoContext.scenario = normalizedUserMsg; // Guardamos el escenario
+            newDemoContext.scenario = normalizedUserMsg; 
             
-            // Lógica para responder según el escenario seleccionado
+            let scenarioFound = true; // Bandera para saber si se encontró un escenario válido
+
             switch (newDemoContext.businessType) {
                 case 'servicios':
                     if (normalizedUserMsg.includes('agendamiento de turnos')) {
@@ -450,8 +433,7 @@ const App = () => {
                         newDemoContext.step = 'simulate_service_general_query';
                         response = "OK, para una **Otra Consulta General**. Un cliente podría preguntar: '*¿Atienden los fines de semana?'*";
                     } else {
-                        response = "Por favor, elige una de las opciones sugeridas para **Servicios**.";
-                        newDemoContext.step = 'select_scenario_for_business_type'; // Mantener en el mismo paso para reintentar
+                        scenarioFound = false;
                     }
                     break;
                 case 'ventas':
@@ -462,8 +444,7 @@ const App = () => {
                         newDemoContext.step = 'simulate_sales_purchase_process';
                         response = "Vamos a simular un **Proceso de Compra**.\n\nUn cliente dice: '*Quiero comprar el producto que vi en la web.*' El bot puede guiarlo.";
                     } else {
-                        response = "Por favor, elige una de las opciones sugeridas para **Ventas**.";
-                        newDemoContext.step = 'select_scenario_for_business_type';
+                        scenarioFound = false;
                     }
                     break;
                 case 'educacion':
@@ -474,8 +455,7 @@ const App = () => {
                         newDemoContext.step = 'simulate_education_enrollment';
                         response = "Simulemos un **Proceso de Inscripción**.\n\nUn cliente: '*Quiero inscribirme en el curso de matemáticas.*' El bot puede enviar un link y guiar el proceso.";
                     } else {
-                        response = "Por favor, elige una de las opciones sugeridas para **Educación**.";
-                        newDemoContext.step = 'select_scenario_for_business_type';
+                        scenarioFound = false;
                     }
                     break;
                 case 'salud':
@@ -486,24 +466,22 @@ const App = () => {
                         newDemoContext.step = 'simulate_health_treatment_info';
                         response = "Muy bien, **Consulta de Tratamiento**.\n\nUn paciente pregunta: '*¿Cómo es el tratamiento de fisioterapia para la rodilla y qué duración tiene?'*";
                     } else {
-                        response = "Por favor, elige una de las opciones sugeridas para **Salud**.";
-                        newDemoContext.step = 'select_scenario_for_business_type';
+                        scenarioFound = false;
                     }
                     break;
-                case 'freelance': // CORREGIDO: Lógica para freelance
+                case 'freelance': 
                     if (normalizedUserMsg.includes('presentar mi portfolio')) {
                         newDemoContext.step = 'simulate_freelance_portfolio';
                         response = "¡Genial! **Presentar tu Portfolio**.\n\nSimulación: '*Hola, necesito un logo para mi marca. ¿Cuánto cobrás y qué incluye?'*";
-                    } else if (normalizedUserMsg.includes('mostrar precios de servicios')) { // CORREGIDO: typo .userMsg
-                        newDemoContext.step = 'simulate_freelance_pricing'; // Nuevo paso para precios de freelance
+                    } else if (normalizedUserMsg.includes('mostrar precios de servicios')) {
+                        newDemoContext.step = 'simulate_freelance_pricing'; 
                         response = "Perfecto, **Mostrar Precios de Servicios**.\n\nSimulación: '*Estoy interesado en tu servicio de diseño web. ¿Cuáles son tus tarifas?'*";
                     }
                      else if (normalizedUserMsg.includes('agendar entrevista')) {
                         newDemoContext.step = 'simulate_freelance_interview';
                         response = "Vamos a simular **Agendar Entrevista**.\n\nUn cliente: '*Me gustaría hablar contigo sobre un proyecto.*' El bot puede agendar una reunión.";
                     } else {
-                        response = "Por favor, elige una de las opciones sugeridas para **Freelance**.";
-                        newDemoContext.step = 'select_scenario_for_business_type';
+                        scenarioFound = false;
                     }
                     break;
                 case 'otro':
@@ -511,24 +489,31 @@ const App = () => {
                         newDemoContext.step = 'simulate_other_general_features';
                         response = "Perfecto, una **Consulta General**. Aquí tu bot puede:\n- Recibir consultas\n- Clasificar al cliente (Calificación de Lead)\n- Agendarte reuniones\n- Vender por vos las 24hs (Integración WhatsApp).";
                     } else {
-                        response = "Por favor, elige la opción sugerida para **Otros**.";
-                        newDemoContext.step = 'select_scenario_for_business_type';
+                        scenarioFound = false;
                     }
                     break;
+                default:
+                    scenarioFound = false; 
+                    break;
+            }
+
+            if (!scenarioFound) {
+                response = `Por favor, elige una de las opciones sugeridas para **${currentDemoContext.businessType.toUpperCase()}**.`;
+                newDemoContext.step = 'select_scenario_for_business_type'; 
             }
             break;
 
         // --- Flujos específicos de simulación detallados ---
+        // Estos casos ahora se mantienen en el mismo paso para permitir más exploración o volver atrás
         case 'simulate_service_booking':
             if (normalizedUserMsg.includes('para que dia y hora')) {
                 response = "¡Perfecto! IABOT respondería: '¡Claro! ¿Para qué fecha y hora te gustaría agendar tu cita?' (Esto es una simulación). Luego, el bot confirmaría la reserva y enviaría recordatorios, optimizando tu agenda.";
             } else if (normalizedUserMsg.includes('que servicios buscas')) {
                 response = "IABOT te preguntaría: '¿Qué tipo de servicio buscas agendar? Por ejemplo: Masaje descontracturante, limpieza facial, etc.' Esto ayuda a refinar la búsqueda del cliente.";
             } else {
-                response = "IABOT te guiaría para agendar. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT te guiaría para agendar. Prueba otra opción relacionada con agendamiento.";
             }
-            newDemoContext.step = 'final_call_to_action'; // Transición al CTA
-            break;
+            break; // No cambia de paso, se queda en simulate_service_booking
 
         case 'simulate_service_faq':
             if (normalizedUserMsg.includes('cuanto dura la sesion')) {
@@ -536,10 +521,9 @@ const App = () => {
             } else if (normalizedUserMsg.includes('necesito turno previo')) {
                 response = "IABOT diría: 'Sí, para garantizar tu lugar, es necesario agendar tu turno con antelación. Puedes hacerlo fácilmente por aquí.'";
             } else {
-                response = "IABOT puede responder muchas FAQs. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT puede responder muchas FAQs. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action'; // Transición al CTA
-            break;
+            break; 
 
         case 'simulate_service_pricing':
             if (normalizedUserMsg.includes('precio de masajes')) {
@@ -547,9 +531,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('precios de otros tratamientos')) {
                 response = "IABOT te mostraría una lista: 'También ofrecemos: Limpieza facial $10.000, Drenaje linfático $18.000, etc.'";
             } else {
-                response = "IABOT maneja precios. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT maneja precios. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_service_general_query':
@@ -558,9 +541,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('donde estan ubicados')) {
                 response = "IABOT te daría la dirección: 'Estamos ubicados en [Dirección de Ejemplo]. Puedes vernos en el mapa aquí: [Link de Google Maps].'";
             } else {
-                response = "IABOT maneja consultas generales. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT maneja consultas generales. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_sales_inquiry':
@@ -569,9 +551,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('hay envio a mi ciudad') || normalizedUserMsg.includes('tiempo de entrega')) {
                  response = "El bot respondería: 'Sí, hacemos envíos a tu ciudad. ¿Nos puedes indicar tu código postal para calcular el costo y tiempo de entrega exacto?'";
             } else {
-                response = "IABOT puede dar información de productos. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT puede dar información de productos. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_sales_purchase_process':
@@ -580,9 +561,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('cuales son las formas de envio') || normalizedUserMsg.includes('metodos de envio')) {
                 response = "IABOT te informaría: 'Ofrecemos envío a domicilio por correo o retiro en nuestro local. ¿Cuál te conviene más? (Esto es una simulación).'";
             } else {
-                response = "IABOT puede asistir en el proceso de compra. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT puede asistir en el proceso de compra. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_education_info':
@@ -591,9 +571,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('precio del curso') || normalizedUserMsg.includes('cuanto vale')) {
                 response = "IABOT te informaría: 'El costo del curso de inglés nivel avanzado es de $30.000 mensuales, con una matrícula de $5.000.'";
             } else {
-                response = "IABOT tiene información sobre tus cursos. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT tiene información sobre tus cursos. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_education_enrollment':
@@ -602,9 +581,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('metodos de pago') || normalizedUserMsg.includes('formas de pago')) {
                 response = "IABOT informaría: 'Puedes pagar con tarjeta de crédito/débito, transferencia bancaria o en cuotas. ¿Necesitas más detalles sobre alguna opción?'";
             } else {
-                response = "IABOT asiste en la inscripción. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT asiste en la inscripción. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_health_booking':
@@ -613,9 +591,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('que tratamientos hay para contracturas') || normalizedUserMsg.includes('masajes para contracturas')) {
                 response = "IABOT te diría: 'Para contracturas, ofrecemos masajes descontracturantes, punción seca y terapia manual. ¿Te gustaría saber más sobre alguno?'";
             } else {
-                response = "IABOT puede ayudar en consultas de salud. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT puede ayudar en consultas de salud. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_health_treatment_info':
@@ -624,9 +601,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('costo de la sesion') || normalizedUserMsg.includes('precio')) {
                 response = "IABOT te informaría: 'El costo por sesión de fisioterapia es de $12.000. Si tienes cobertura, por favor, indícanos tu obra social.'";
             } else {
-                response = "IABOT provee información de tratamientos. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT provee información de tratamientos. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_freelance_portfolio':
@@ -635,20 +611,18 @@ const App = () => {
             } else if (normalizedUserMsg.includes('ver portfolio') || normalizedUserMsg.includes('muestrame tu trabajo') || normalizedUserMsg.includes('presentar mi portfolio')) {
                 response = "IABOT te daría el link: '¡Claro! Puedes ver mi portfolio completo aquí: [Link a Portfolio Falso]. Ahí encontrarás ejemplos de logos y otros trabajos.'";
             } else {
-                response = "IABOT puede presentar tu trabajo. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT puede presentar tu trabajo. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
-        case 'simulate_freelance_pricing': // NUEVO: paso para precios de freelance
+        case 'simulate_freelance_pricing': 
             if (normalizedUserMsg.includes('cuales son tus tarifas') || normalizedUserMsg.includes('precio de diseño web') || normalizedUserMsg.includes('tarifas')) {
                 response = "IABOT te informaría: 'Mis tarifas para diseño web varían según la complejidad del proyecto. Un sitio básico empieza en $80.000, incluyendo 5 secciones y un mes de soporte.'";
             } else if (normalizedUserMsg.includes('ejemplos de trabajos') || normalizedUserMsg.includes('ver proyectos')) {
                 response = "IABOT te daría el link: '¡Claro! Puedes ver ejemplos de mi trabajo de diseño web aquí: [Link a Ejemplos Diseño Web Falso].'";
             } else {
-                response = "IABOT puede darte detalles sobre precios. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT puede darte detalles sobre precios. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_freelance_interview':
@@ -657,9 +631,8 @@ const App = () => {
             } else if (normalizedUserMsg.includes('estas disponible esta semana')) {
                 response = "IABOT consultaría tu agenda y respondería: 'Sí, tengo disponibilidad el miércoles a las 10:00 AM y el viernes a las 14:00 PM. ¿Cuál te va mejor?'";
             } else {
-                response = "IABOT facilita el contacto. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT facilita el contacto. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'simulate_other_general_features':
@@ -668,16 +641,15 @@ const App = () => {
             } else if (normalizedUserMsg.includes('puede agendar por mi') || normalizedUserMsg.includes('agendar reuniones')) {
                 response = "IABOT puede integrarse con tu calendario (ej. Google Calendar) y agendar reuniones automáticamente, enviando invitaciones y recordatorios. ¡Es como tener un asistente virtual 24/7!";
             } else {
-                response = "IABOT es muy versátil. Prueba otra opción.";
+                response = "No pude entender tu pregunta. IABOT es muy versátil. Prueba otra opción.";
             }
-            newDemoContext.step = 'final_call_to_action';
             break;
 
         case 'final_call_to_action':
             const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
             const emailMatch = userMsg.match(emailRegex);
             
-            let nameForContact = "Cliente Interesado"; // Default name
+            let nameForContact = "Cliente Interesado"; 
             let emailForContact = "";
 
             if (emailMatch) {
@@ -689,7 +661,7 @@ const App = () => {
                 for (const keyword of nameKeywords) {
                     const keywordIndex = normalizeInput(remainingText).indexOf(normalizeInput(keyword));
                     if (keywordIndex !== -1) {
-                        nameForContact = remainingText.substring(keywordIndex + keyword.length).trim().split(' ')[0]; // Tomar solo la primera palabra como nombre
+                        nameForContact = remainingText.substring(keywordIndex + keyword.length).trim().split(' ')[0]; 
                         if (nameForContact.length > 0) foundName = true;
                         break;
                     }
@@ -707,15 +679,15 @@ const App = () => {
                     }
                 }
 
-                if (nameForContact.length > 30) nameForContact = nameForContact.substring(0, 30) + "..."; // Limitar longitud del nombre
-                if (!nameForContact || normalizeInput(nameForContact).includes('email') || normalizeInput(nameForContact).includes('e-mail') || nameForContact.length < 2) nameForContact = "Cliente Interesado"; // Fallback para nombres inválidos
+                if (nameForContact.length > 30) nameForContact = nameForContact.substring(0, 30) + "..."; 
+                if (!nameForContact || normalizeInput(nameForContact).includes('email') || normalizeInput(nameForContact).includes('e-mail') || nameForContact.length < 2) nameForContact = "Cliente Interesado"; 
 
             }
 
             if (emailForContact.includes("@") && emailForContact.includes(".")) {
                 newDemoContext.data.name = nameForContact;
                 newDemoContext.data.email = emailForContact;
-                newDemoContext.step = 'demo_end'; // Cambiar a demo_end para el mensaje final
+                newDemoContext.step = 'demo_end'; 
                 response = `¡Gracias, ${nameForContact}! Hemos recibido tu información (${emailForContact}) y un experto de IABOT se pondrá en contacto contigo pronto. Esto demuestra nuestra capacidad de calificar leads y gestionar contactos de manera eficiente.`;
                 response += "\n\n**Recuerda:** Esto es solo una demo. Al contratar el servicio, tendrás todas las opciones conversacionales habilitadas con IA, integraciones reales y un flujo completamente personalizado para tu negocio.";
                 
@@ -724,22 +696,17 @@ const App = () => {
             }
             else {
                  response = "Ese no parece un formato de nombre y email válido. Por favor, ingresa tu nombre y email (ej. Juan Pérez, juan@ejemplo.com).";
-                 newDemoContext.step = 'final_call_to_action'; // Mantener en el mismo paso hasta obtener el formato correcto
+                 newDemoContext.step = 'final_call_to_action'; 
             }
             break;
 
-        case 'demo_end': // Estado final, esperando reinicio
+        case 'demo_end': 
             response = "Gracias por participar en la demo. Si deseas explorar más, puedes reiniciar la simulación.";
             break;
 
         default:
             response = "Lo siento, hubo un problema en la simulación. Por favor, reinicia para comenzar de nuevo.";
             break;
-    }
-
-    // Añadir el CTA unificado al final de cada simulación exitosa
-    if (newDemoContext.step === 'final_call_to_action' && !response.includes("¿Te gustaría ver una demo más completa")) {
-        response += `\n\n¿Te gustaría ver una demo más completa, un video demostrativo que profundice en más funcionalidades o agendar una cita directa para discutir cómo IABOT puede transformar tu negocio? Si es así, por favor, déjanos tu **nombre** y **email** para coordinar.`;
     }
 
     return { response, newDemoContext };
@@ -777,22 +744,22 @@ const App = () => {
                 case 'ventas':
                     suggestions = [
                         { text: "Consulta de Stock y Precio", key: "consulta de stock y precio", icon: faSearch },
-                        { text: "Proceso de Compra", key: "proceso de compra", icon: faTruck } // CORREGIDO: faTruck
+                        { text: "Proceso de Compra", key: "proceso de compra", icon: faTruck } 
                     ];
                     break;
                 case 'educacion':
                     suggestions = [
                         { text: "Simular Consulta de Curso", key: "simular consulta de curso", icon: faBookOpen },
-                        { text: "Simular Inscripción", key: "simular inscripcion", icon: faLink } // CORREGIDO: faLink
+                        { text: "Simular Inscripción", key: "simular inscripcion", icon: faLink } 
                     ];
                     break;
                 case 'salud':
                     suggestions = [
                         { text: "Simular Agendamiento Salud", key: "simular agendamiento salud", icon: faCalendarCheck },
-                        { text: "Simular Consulta Tratamiento", key: "simular consulta tratamiento", icon: faStethoscope } // CORREGIDO: faStethoscope
+                        { text: "Simular Consulta Tratamiento", key: "simular consulta tratamiento", icon: faStethoscope } 
                     ];
                     break;
-                case 'freelance': // CORREGIDO: Sugerencias para freelance
+                case 'freelance': 
                     suggestions = [
                         { text: "Presentar mi Portfolio", key: "presentar mi portfolio", icon: faPalette }, 
                         { text: "Mostrar Precios de Servicios", key: "mostrar precios de servicios", icon: faDollarSignSolid }, 
@@ -805,13 +772,13 @@ const App = () => {
                     ];
                     break;
                 default:
-                    // Esto no debería pasar, pero como fallback
                     suggestions.push({ text: "Reiniciar Simulación", key: "reiniciar simulacion", icon: faSyncAlt });
                     break;
             }
             break;
 
         // Sugerencias dentro de cada simulación (pasos de 'simulate_X_flow')
+        // Aquí se mostrarán las opciones de interacción para CADA simulación, más los botones de navegación
         case 'simulate_service_booking':
             suggestions = [
                 { text: "Para qué día y hora", key: "para que dia y hora", icon: faCalendarDay },
@@ -827,7 +794,7 @@ const App = () => {
         case 'simulate_service_pricing':
             suggestions = [
                 { text: "Precio de masajes", key: "precio de masajes", icon: faDollarSignSolid },
-                { text: "Precios de otros tratamientos", key: "precios de otros tratamientos", icon: faEuroSign } // Usar un icono de moneda diferente
+                { text: "Precios de otros tratamientos", key: "precios de otros tratamientos", icon: faEuroSign } 
             ];
             break;
         case 'simulate_service_general_query':
@@ -863,7 +830,7 @@ const App = () => {
         case 'simulate_health_booking':
             suggestions = [
                 { text: "¿Aceptan mi obra social?", key: "aceptan mi obra social", icon: faHandsHelping },
-                { text: "¿Qué tratamientos hay para contracturas?", key: "que tratamientos hay para contracturas", icon: faCapsules } // CORREGIDO: faCapsules
+                { text: "¿Qué tratamientos hay para contracturas?", key: "que tratamientos hay para contracturas", icon: faCapsules } 
             ];
             break;
         case 'simulate_health_treatment_info':
@@ -878,10 +845,10 @@ const App = () => {
                 { text: "Ver portfolio", key: "ver portfolio", icon: faPalette }
             ];
             break;
-        case 'simulate_freelance_pricing': // NUEVO: sugerencias para precios de freelance
+        case 'simulate_freelance_pricing': 
             suggestions = [
                 { text: "Cuáles son tus tarifas", key: "cuales son tus tarifas", icon: faDollarSignSolid },
-                { text: "Ejemplos de trabajos", key: "ejemplos de trabajos", icon: faFileAlt } // CORREGIDO: faFileAlt
+                { text: "Ejemplos de trabajos", key: "ejemplos de trabajos", icon: faFileAlt } 
             ];
             break;
         case 'simulate_freelance_interview':
@@ -921,6 +888,17 @@ const App = () => {
     if (demoContext.active && demoContext.step !== 'welcome' && demoContext.step !== 'demo_end') {
         suggestions.push({ text: "Reiniciar Simulación", key: "reiniciar simulacion", icon: faSyncAlt });
     }
+
+    // Añadir "Volver a Opciones del Rubro" si estamos en un paso de simulación específica
+    if (demoContext.step.startsWith('simulate_') && demoContext.businessType) {
+        suggestions.unshift({ text: `Volver a Opciones de ${demoContext.businessType.charAt(0).toUpperCase() + demoContext.businessType.slice(1)}`, key: "volver a opciones del rubro", icon: faReply });
+    }
+
+    // Añadir "Finalizar Demo y Contactar" si estamos en un paso donde tiene sentido pasar al CTA (no en el CTA mismo, ni en el final ni en el welcome)
+    if (demoContext.active && demoContext.step !== 'welcome' && demoContext.step !== 'final_call_to_action' && demoContext.step !== 'demo_end') {
+        suggestions.push({ text: "Finalizar Demo y Contactar", key: "finalizar demo y contactar", icon: faPaperPlane });
+    }
+
 
     // Filtramos duplicados para que los botones sean únicos (por su 'key')
     const uniqueSuggestions = [];
@@ -1219,50 +1197,10 @@ const App = () => {
           
           {/* Contenedor del Chatbot Demo */}
           <div className="chatbot-container bg-darker-color rounded shadow-lg p-4 mx-auto" style={{ maxWidth: '600px', height: '550px', display: 'flex', flexDirection: 'column' }}>
-            {/* Controles de funciones de demo */}
+            {/* Controles de funciones de demo (SIMPLIFICADO) */}
             <div className="demo-features-controls mb-3 p-3 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <p className="fw-bold mb-2">Activar funciones de demo:</p>
+              <p className="fw-bold mb-2">Activar demo de IA:</p>
               <div className="d-flex flex-wrap gap-3 justify-content-center">
-                <div className="form-check form-switch">
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
-                    id="whatsappSwitch" 
-                    checked={selectedDemoFeatures.whatsapp} 
-                    onChange={() => handleDemoFeatureToggle('whatsapp')} 
-                  />
-                  <label className="form-check-label" htmlFor="whatsappSwitch">Integración WhatsApp</label>
-                </div>
-                <div className="form-check form-switch">
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
-                    id="humanAgentSwitch" 
-                    checked={selectedDemoFeatures.humanAgent} 
-                    onChange={() => handleDemoFeatureToggle('humanAgent')} 
-                  />
-                  <label className="form-check-label" htmlFor="humanAgentSwitch">Transferencia a Agente Humano</label>
-                </div>
-                <div className="form-check form-switch">
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
-                    id="leadQualSwitch" 
-                    checked={selectedDemoFeatures.leadQualification} 
-                    onChange={() => handleDemoFeatureToggle('leadQualification')} 
-                  />
-                  <label className="form-check-label" htmlFor="leadQualSwitch">Calificación de Lead</label>
-                </div>
-                 <div className="form-check form-switch"> 
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
-                    id="faqResponderSwitch" 
-                    checked={selectedDemoFeatures.faqResponder} 
-                    onChange={() => handleDemoFeatureToggle('faqResponder')} 
-                  />
-                  <label className="form-check-label" htmlFor="faqResponderSwitch">FAQs Inteligentes</label>
-                </div>
                  <div className="form-check form-switch"> 
                   <input 
                     className="form-check-input" 
@@ -1271,7 +1209,7 @@ const App = () => {
                     checked={selectedDemoFeatures.productRecommendation} 
                     onChange={() => handleDemoFeatureToggle('productRecommendation')} 
                   />
-                  <label className="form-check-label" htmlFor="productRecommendationSwitch">Simulación de IA</label> {/* Cambiado el texto del switch */}
+                  <label className="form-check-label" htmlFor="productRecommendationSwitch">Simulación de IA</label>
                 </div>
               </div>
             </div>
@@ -1279,7 +1217,7 @@ const App = () => {
             {/* Historial de mensajes */}
             <div className="chat-history flex-grow-1 overflow-auto p-3 mb-3 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
               {chatHistory.length === 0 ? (
-                <p className="text-muted text-center mt-5">¡Hola! Activa una función de demo (especialmente "Simulación de IA") y usa las sugerencias para empezar.</p>
+                <p className="text-muted text-center mt-5">Activa el switch "Simulación de IA" y luego selecciona una opción para empezar.</p>
               ) : (
                 chatHistory.map((msg, index) => (
                   <div key={index} className={`d-flex mb-2 ${msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'}`}>
