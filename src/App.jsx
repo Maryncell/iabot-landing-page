@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'; // Importa useRef
 import './style.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // Íconos sólidos y de marcas (Añadidos nuevos para los tipos de negocio y acciones)
-import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn, faEnvelope, faPhone, faBookOpen, faGraduationCap, faPaintBrush, faLaptopCode, faStore, faChalkboardTeacher, faUserTie, faBuilding, faSpa, faTag, faClipboardList, faCookieBite, faDollarSign as faDollarSignSolid, faPlayCircle, faCalendarCheck, faSyncAlt, faEuroSign, faHandHoldingUsd, faSearch, faBriefcase, faChalkboard, faHeartbeat, faPalette, faFileAlt, faQuoteRight, faMapMarkerAlt, faClock, faWallet, faHandsHelping, faBoxes, faHandPointRight, faVideo, faCalendarDay, faUserClock, faCapsules, faLink, faTruck, faStethoscope, faReply, faPaperPlane } from '@fortawesome/free-solid-svg-icons'; 
+import { faRobot, faChartLine, faHeadset, faCheck, faStar, faPlusCircle, faQuestionCircle, faInfoCircle, faLightbulb, faCreditCard, faComments, faUsers, faCalendarAlt, faListOl, faDollarSign, faTools, faHandshake, faShoppingCart, faConciergeBell, faTasks, faBullhorn, faEnvelope, faPhone, faBookOpen, faGraduationCap, faPaintBrush, faLaptopCode, faStore, faChalkboardTeacher, faUserTie, faBuilding, faSpa, faTag, faClipboardList, faCookieBite, faDollarSign as faDollarSignSolid, faPlayCircle, faCalendarCheck, faSyncAlt, faEuroSign, faHandHoldingUsd, faSearch, faBriefcase, faChalkboard, faHeartbeat, faPalette, faFileAlt, faQuoteRight, faMapMarkerAlt, faClock, faWallet, faHandsHelping, faBoxes, faHandPointRight, faVideo, faCalendarDay, faUserClock, faCapsules, faLink, faTruck, faStethoscope, faReply, faPaperPlane, faHome, faUserPlus, faChild, faUserMd, faVials, faExclamationTriangle, faUserTie as faUserTieSolid } from '@fortawesome/free-solid-svg-icons'; 
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'; // Importación correcta para faWhatsapp
 
 // Función auxiliar para normalizar el texto de entrada del usuario
@@ -47,7 +47,7 @@ const App = () => {
 
   const [loadingPlanes, setLoadingPlanes] = useState(true);
   const [errorPlanes, setErrorPlanes] = useState(null);
-  const [loadingFeatures, setLoadingFeatures] = useState(true); 
+  const [loadingFeatures, setLoadingFeatures] = useState(true); // <<-- CORRECCIÓN AQUI
   const [errorFeatures, setErrorFeatures] = useState(null);
   const [stripePromise, setStripePromise] = useState(null); 
 
@@ -339,19 +339,21 @@ const App = () => {
         return { response: resetDemo(), newDemoContext: { active: false, flow: null, step: 'welcome', businessType: null, scenario: null, data: {} } };
     }
     
-    // Lógica para volver a las opciones del rubro (este es el punto clave)
-    if (normalizedUserMsg.includes("volver a opciones del rubro") && newDemoContext.businessType) {
-        newDemoContext.step = 'select_scenario_for_business_type';
-        newDemoContext.scenario = null; // Limpiar el escenario específico
-        response = `¡De acuerdo! Volviendo a las opciones para tu negocio de **${newDemoContext.businessType.charAt(0).toUpperCase() + newDemoContext.businessType.slice(1)}**. ¿Qué te gustaría simular ahora?`;
-        return { response, newDemoContext };
+    // NUEVA Lógica para volver al Menú Principal (prioritaria)
+    if (normalizedUserMsg.includes("menu principal")) {
+        newDemoContext.step = 'ask_business_type';
+        newDemoContext.businessType = null;
+        newDemoContext.scenario = null;
+        newDemoContext.data = {}; // Limpiar datos de contexto específicos del rubro
+        response = "¡Perfecto! Volviendo al menú principal. ¿A qué rubro pertenece tu negocio?";
+        return { response, newDemoContext }; // Retorna inmediatamente para procesar este comando
     }
 
-    // Lógica para ir al CTA final
+    // Lógica para ir al CTA final (prioritaria)
     if (normalizedUserMsg.includes("finalizar demo y contactar")) {
         newDemoContext.step = 'final_call_to_action';
         response = "¿Querés tener un asistente como este trabajando para vos?\n\nTe puedo ayudar a configurarlo según tu negocio.\n\nPara coordinar, por favor, déjanos tu **nombre** y **email** (ej. Juan Pérez, juan@ejemplo.com).";
-        return { response, newDemoContext };
+        return { response, newDemoContext }; // Retorna inmediatamente
     }
 
 
@@ -360,7 +362,7 @@ const App = () => {
         // Manejar "iniciar demo ia" para activar el flujo
         if (normalizedUserMsg.includes("iniciar demo ia") || normalizedUserMsg.includes("iniciar demo")) {
             newDemoContext = { active: true, flow: 'ai_simulation_flow', step: 'ask_business_type', data: {} };
-            response = "👋 ¡Hola! Soy IABOT, tu asistente virtual personalizado.\n\nEstoy diseñado para adaptarse a tu tipo de negocio y ayudarte a responder clientes automáticamente.\n\nAntes de comenzar, contame:\n¿A qué rubro pertenece tu negocio?";
+            response = "👋 ¡Hola! Soy IABOT, tu asistente virtual personalizado.\n\nEstoy diseñado para adaptarme a tu tipo de negocio y ayudarte a responder clientes automáticamente.\n\nAntes de comenzar, contame:\n¿A qué rubro pertenece tu negocio?";
             return { response, newDemoContext };
         }
         // Respuestas de fallback generales si la demo de IA no está activa
@@ -379,14 +381,25 @@ const App = () => {
     // --- Flujo de la Demo de IA (cuando selectedDemoFeatures.productRecommendation está activo) ---
     switch (currentDemoContext.step) {
         case 'ask_business_type':
-            const validBusinessTypes = ["servicios", "ventas", "educacion", "salud", "freelance", "otro", "ventas / ecommerce", "ecommerce"]; // Añadido "ecommerce"
-            const cleanBusinessType = normalizedUserMsg.replace(" / ecommerce", "").replace("ecommerce", "ventas"); // Normaliza "ecommerce" a "ventas"
+            // Ahora solo evaluamos si la entrada normalizada está en nuestra lista de tipos válidos
+            const validBusinessTypesNormalized = ["servicios", "ventas", "educacion", "salud", "freelance", "otro"]; 
+            let chosenBusinessType = null;
 
-            if (validBusinessTypes.includes(normalizedUserMsg)) { // Evaluar con la entrada original para el mensaje, pero usar clean para la lógica
-                newDemoContext.businessType = cleanBusinessType;
+            if (normalizedUserMsg.includes("ventas") || normalizedUserMsg.includes("ecommerce")) {
+                chosenBusinessType = "ventas"; // Normalizar a "ventas"
+            } else if (validBusinessTypesNormalized.includes(normalizedUserMsg)) {
+                chosenBusinessType = normalizedUserMsg;
+            }
+
+            if (chosenBusinessType) {
+                newDemoContext.businessType = chosenBusinessType;
                 newDemoContext.step = 'select_scenario_for_business_type';
-                let businessDisplay = normalizedUserMsg === "ecommerce" ? "Ventas/Ecommerce" : userMsg; // Mostrar "Ventas/Ecommerce" si se escribe "ecommerce"
-                response = `¡Genial! Un negocio de **${businessDisplay}** puede beneficiarse enormemente de IABOT.`;
+                let displayType = chosenBusinessType.charAt(0).toUpperCase() + chosenBusinessType.slice(1);
+                if (chosenBusinessType === 'ventas') { // Ajustar display para ventas
+                    displayType = "Ventas/Ecommerce";
+                }
+                
+                response = `¡Genial! Un negocio de **${displayType}** puede beneficiarse enormemente de IABOT.`;
 
                 switch (newDemoContext.businessType) {
                     case 'servicios':
@@ -399,7 +412,7 @@ const App = () => {
                         response += "\n\n¡Excelente! Este bot puede:\n- Informar sobre horarios\n- Pasar precios\n- Enviar links de inscripción\n- Responder dudas frecuentes.";
                         break;
                     case 'salud':
-                        response += "\n\n¿Sos nutricionista, kinesiólogo, terapeuta, etc.? El bot puede:\n- Agendar turnos\n- Explicar tratamientos\n- Verificar coberturas médicas\n- Derivar al profesional.";
+                        response += "\n\n¡Genial! Nuestro bot de salud puede:\n- Agendar turnos por especialidad\n- Informar sobre estudios y tratamientos\n- Resolver FAQs de pacientes\n- Asistir en el registro de nuevos pacientes.";
                         break;
                     case 'freelance':
                         response += "\n\nPara profesionales independientes, el bot puede:\n- Presentar tu portfolio\n- Mostrar precios por servicios\n- Agendar entrevistas\n- Responder automáticamente si estás ocupado.";
@@ -409,7 +422,7 @@ const App = () => {
                         break;
                 }
             } else {
-                response = "No pude identificar ese tipo de negocio. Por favor, selecciona uno de los sugeridos (Servicios, Ventas/Ecommerce, Educación, Salud, Freelance, Otro) o descríbelo brevemente.";
+                response = "No pude identificar ese tipo de negocio. Por favor, selecciona uno de los sugeridos (Servicios, Ventas, Educación, Salud, Freelance, Otro) o descríbelo brevemente.";
             }
             break;
 
@@ -459,12 +472,18 @@ const App = () => {
                     }
                     break;
                 case 'salud':
-                    if (normalizedUserMsg.includes('simular agendamiento salud')) {
+                    if (normalizedUserMsg.includes('agendamiento de turnos')) {
                         newDemoContext.step = 'simulate_health_booking';
-                        response = "Ok, simulemos **Agendamiento en Salud**.\n\nUn paciente dice: '*Hola, me interesa saber si hacen masajes para contracturas y si toman obras sociales.*'";
-                    } else if (normalizedUserMsg.includes('simular consulta tratamiento')) {
+                        response = "Ok, simulemos **Agendamiento de Turnos**.\n\nUn paciente dice: '*Quisiera agendar un turno. ¿Con qué especialidad cuentan?*' ¿Cómo respondería tu bot?";
+                    } else if (normalizedUserMsg.includes('consultas sobre estudios')) {
                         newDemoContext.step = 'simulate_health_treatment_info';
-                        response = "Muy bien, **Consulta de Tratamiento**.\n\nUn paciente pregunta: '*¿Cómo es el tratamiento de fisioterapia para la rodilla y qué duración tiene?'*";
+                        response = "Muy bien, simulemos **Consultas sobre Estudios o Tratamientos**.\n\nUn paciente pregunta: '*Necesito resultados de mi análisis de sangre. ¿Cómo los obtengo?*' ¿Cómo le respondería el bot?";
+                    } else if (normalizedUserMsg.includes('faqs pacientes')) {
+                        newDemoContext.step = 'simulate_health_faq';
+                        response = "Simulemos **FAQs de Pacientes**.\n\nUn paciente dice: '*¿El consultorio atiende los sábados?*' ¿Qué diría el bot?";
+                    } else if (normalizedUserMsg.includes('registro nuevo paciente')) {
+                        newDemoContext.step = 'simulate_health_new_patient';
+                        response = "Perfecto, **Registro de Nuevo Paciente** (Demostrando Calificación de Lead).\n\nUn usuario: '*Quiero sacar un turno pero soy paciente nuevo.*' ¿Qué datos le pedirías primero?";
                     } else {
                         scenarioFound = false;
                     }
@@ -498,13 +517,13 @@ const App = () => {
             }
 
             if (!scenarioFound) {
-                response = `Por favor, elige una de las opciones sugeridas para **${currentDemoContext.businessType.toUpperCase()}**.`;
+                response = `Por favor, elige una de las opciones sugeridas para **${currentDemoContext.businessType.charAt(0).toUpperCase() + currentDemoContext.businessType.slice(1)}**.`;
                 newDemoContext.step = 'select_scenario_for_business_type'; 
             }
             break;
 
         // --- Flujos específicos de simulación detallados ---
-        // Estos casos ahora se mantienen en el mismo paso para permitir más exploración o volver atrás
+        // Estos casos ahora se mantienen en el mismo paso para permitir más exploración
         case 'simulate_service_booking':
             if (normalizedUserMsg.includes('para que dia y hora')) {
                 response = "¡Perfecto! IABOT respondería: '¡Claro! ¿Para qué fecha y hora te gustaría agendar tu cita?' (Esto es una simulación). Luego, el bot confirmaría la reserva y enviaría recordatorios, optimizando tu agenda.";
@@ -513,7 +532,7 @@ const App = () => {
             } else {
                 response = "No pude entender tu pregunta. IABOT te guiaría para agendar. Prueba otra opción relacionada con agendamiento.";
             }
-            break; // No cambia de paso, se queda en simulate_service_booking
+            break; 
 
         case 'simulate_service_faq':
             if (normalizedUserMsg.includes('cuanto dura la sesion')) {
@@ -585,23 +604,45 @@ const App = () => {
             }
             break;
 
+        // --- SALUD FLUJOS REVISADOS ---
         case 'simulate_health_booking':
-            if (normalizedUserMsg.includes('aceptan mi obra social') || normalizedUserMsg.includes('toman obras sociales')) {
-                response = "IABOT consultaría tu lista de convenios: 'Sí, aceptamos varias obras sociales. ¿Cuál es la tuya? (Esto es una simulación para IABOT).'";
-            } else if (normalizedUserMsg.includes('que tratamientos hay para contracturas') || normalizedUserMsg.includes('masajes para contracturas')) {
-                response = "IABOT te diría: 'Para contracturas, ofrecemos masajes descontracturantes, punción seca y terapia manual. ¿Te gustaría saber más sobre alguno?'";
+            if (normalizedUserMsg.includes('cardiologia') || normalizedUserMsg.includes('pediatria') || normalizedUserMsg.includes('clinica general') || normalizedUserMsg.includes('laboratorio')) {
+                newDemoContext.data.specialty = userMsg; // Guardar la especialidad elegida
+                response = `Perfecto, tenemos turnos disponibles en **${userMsg}**. ¿Para qué fecha y hora te convendría agendar?`;
+            } else if (normalizedUserMsg.includes('manana a las 10 am') || normalizedUserMsg.includes('pasado manana') || normalizedUserMsg.includes('25 de julio 14hs')) {
+                response = `Confirmado. Su turno para ${newDemoContext.data.specialty || 'la consulta'} es para ${userMsg}. Recibirá un recordatorio por WhatsApp. ¡Esto demuestra nuestro **Agendamiento Inteligente** en acción!`;
             } else {
-                response = "No pude entender tu pregunta. IABOT puede ayudar en consultas de salud. Prueba otra opción.";
+                response = "No pude entender tu pregunta. Para agendar, por favor, indica una especialidad o un horario.";
             }
             break;
 
         case 'simulate_health_treatment_info':
-            if (normalizedUserMsg.includes('duracion del tratamiento') || normalizedUserMsg.includes('cuanto dura')) {
-                response = "IABOT respondería: 'El tratamiento de fisioterapia para rodilla suele requerir entre 8 y 12 sesiones, dependiendo de la evolución del paciente.'";
-            } else if (normalizedUserMsg.includes('costo de la sesion') || normalizedUserMsg.includes('precio')) {
-                response = "IABOT te informaría: 'El costo por sesión de fisioterapia es de $12.000. Si tienes cobertura, por favor, indícanos tu obra social.'";
+            if (normalizedUserMsg.includes('resultados analisis sangre') || normalizedUserMsg.includes('como obtengo resultados')) {
+                response = "Puedes acceder a los resultados de laboratorio en nuestro portal de pacientes con tu DNI y número de estudio aquí: [Link a Portal Falso]. Esto demuestra cómo gestionamos **FAQs Inteligentes**.";
+            } else if (normalizedUserMsg.includes('estudios de cardiologia')) {
+                response = "Realizamos electrocardiogramas, ecocardiogramas, ergometrías y Holter. ¿Te gustaría saber más sobre alguno en particular?";
             } else {
-                response = "No pude entender tu pregunta. IABOT provee información de tratamientos. Prueba otra opción.";
+                response = "No pude entender tu pregunta. Podemos informarte sobre diversos estudios y tratamientos. Prueba otra consulta.";
+            }
+            break;
+
+        case 'simulate_health_faq':
+            if (normalizedUserMsg.includes('consultorio atiende sabados')) {
+                response = "IABOT respondería: 'Sí, nuestro consultorio de Clínicas y Traumatología atiende los sábados de 9:00 a 13:00 hs. para consultas y urgencias.'";
+            } else if (normalizedUserMsg.includes('atienden urgencias')) {
+                response = "IABOT te informaría: 'Sí, contamos con servicio de urgencias 24 horas para casos que requieren atención inmediata. Por favor, especifique el tipo de emergencia.'";
+            } else {
+                response = "No pude entender tu pregunta. IABOT puede responder FAQs comunes para pacientes. Prueba otra opción.";
+            }
+            break;
+
+        case 'simulate_health_new_patient':
+            if (normalizedUserMsg.includes('nombre completo dni fecha nacimiento') || normalizedUserMsg.includes('mis datos')) {
+                response = "¡Excelente! Gracias por tus datos. Con esto, IABOT ya puede iniciar tu registro como nuevo paciente y ayudarte a agendar tu primera consulta. Esto es un ejemplo de **Calificación de Lead** automatizada.";
+            } else if (normalizedUserMsg.includes('documentacion necesaria')) {
+                response = "IABOT te diría: 'Para el registro, necesitarás tu DNI y carnet de obra social si posees. ¿Ya tienes todo listo?'";
+            } else {
+                response = "No pude entender tu pregunta. Para el registro de nuevo paciente, IABOT te pediría los datos básicos.";
             }
             break;
 
@@ -723,8 +764,8 @@ const App = () => {
       switch (demoContext.step) {
         case 'ask_business_type':
           suggestions = [
-            { text: "Servicios", key: "servicios", icon: faUserTie },
-            { text: "Ventas / Ecommerce", key: "ventas / ecommerce", icon: faShoppingCart },
+            { text: "Servicios", key: "servicios", icon: faUserTieSolid }, // Icono actualizado
+            { text: "Ventas", key: "ventas", icon: faShoppingCart }, // Cambiado a "Ventas"
             { text: "Educación", key: "educacion", icon: faGraduationCap },
             { text: "Salud", key: "salud", icon: faHeartbeat },
             { text: "Freelance", key: "freelance", icon: faLaptopCode }, 
@@ -755,8 +796,10 @@ const App = () => {
                     break;
                 case 'salud':
                     suggestions = [
-                        { text: "Simular Agendamiento Salud", key: "simular agendamiento salud", icon: faCalendarCheck },
-                        { text: "Simular Consulta Tratamiento", key: "simular consulta tratamiento", icon: faStethoscope } 
+                        { text: "Agendamiento de Turnos", key: "agendamiento de turnos", icon: faCalendarCheck },
+                        { text: "Consultas sobre Estudios", key: "consultas sobre estudios", icon: faStethoscope },
+                        { text: "FAQs Pacientes", key: "faqs pacientes", icon: faQuestionCircle },
+                        { text: "Registro Nuevo Paciente", key: "registro nuevo paciente", icon: faUserPlus } 
                     ];
                     break;
                 case 'freelance': 
@@ -827,18 +870,37 @@ const App = () => {
                 { text: "Métodos de pago", key: "metodos de pago", icon: faCreditCard }
             ];
             break;
+
+        // --- SALUD SUGERENCIAS REVISADAS ---
         case 'simulate_health_booking':
             suggestions = [
-                { text: "¿Aceptan mi obra social?", key: "aceptan mi obra social", icon: faHandsHelping },
-                { text: "¿Qué tratamientos hay para contracturas?", key: "que tratamientos hay para contracturas", icon: faCapsules } 
+                { text: "Cardiología", key: "cardiologia", icon: faHeartbeat },
+                { text: "Pediatría", key: "pediatria", icon: faChild }, 
+                { text: "Clínica General", key: "clinica general", icon: faUserMd }, 
+                { text: "Laboratorio", key: "laboratorio", icon: faVials },
+                { text: "Mañana a las 10 AM", key: "manana a las 10 am", icon: faClock }, 
+                { text: "25 de Julio, 14hs", key: "25 de julio 14hs", icon: faCalendarDay }
             ];
             break;
         case 'simulate_health_treatment_info':
             suggestions = [
-                { text: "Duración del tratamiento", key: "duracion del tratamiento", icon: faClock },
-                { text: "Costo de la sesión", key: "costo de la sesion", icon: faDollarSignSolid }
+                { text: "Resultados análisis sangre", key: "resultados analisis sangre", icon: faFileAlt },
+                { text: "Estudios de Cardiología", key: "estudios de cardiologia", icon: faLungs } 
             ];
             break;
+        case 'simulate_health_faq':
+            suggestions = [
+                { text: "¿El consultorio atiende sábados?", key: "consultorio atiende sabados", icon: faClock },
+                { text: "¿Atienden urgencias?", key: "atienden urgencias", icon: faExclamationTriangle } 
+            ];
+            break;
+        case 'simulate_health_new_patient':
+            suggestions = [
+                { text: "Nombre completo, DNI, fecha nacimiento", key: "nombre completo dni fecha nacimiento", icon: faUserPlus }, 
+                { text: "¿Qué documentación necesito?", key: "documentacion necesaria", icon: faClipboardList }
+            ];
+            break;
+
         case 'simulate_freelance_portfolio':
             suggestions = [
                 { text: "Precios de logos", key: "precios de logos", icon: faDollarSignSolid },
@@ -889,10 +951,12 @@ const App = () => {
         suggestions.push({ text: "Reiniciar Simulación", key: "reiniciar simulacion", icon: faSyncAlt });
     }
 
-    // Añadir "Volver a Opciones del Rubro" si estamos en un paso de simulación específica
-    if (demoContext.step.startsWith('simulate_') && demoContext.businessType) {
-        suggestions.unshift({ text: `Volver a Opciones de ${demoContext.businessType.charAt(0).toUpperCase() + demoContext.businessType.slice(1)}`, key: "volver a opciones del rubro", icon: faReply });
+    // AÑADIDO: "Menú Principal" si estamos en un paso de selección de escenario o simulación específica
+    if (demoContext.active && (demoContext.step === 'select_scenario_for_business_type' || demoContext.step.startsWith('simulate_'))) {
+        // Asegurarse de que el botón "Menú Principal" sea el primero si está presente
+        suggestions.unshift({ text: "Menú Principal", key: "menu principal", icon: faHome });
     }
+
 
     // Añadir "Finalizar Demo y Contactar" si estamos en un paso donde tiene sentido pasar al CTA (no en el CTA mismo, ni en el final ni en el welcome)
     if (demoContext.active && demoContext.step !== 'welcome' && demoContext.step !== 'final_call_to_action' && demoContext.step !== 'demo_end') {
